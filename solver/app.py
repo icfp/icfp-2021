@@ -8,6 +8,7 @@ PROBLEMS_DIR = path.join(ROOT_DIR, 'problems')
 
 
 Point = tuple[int, int]
+Hole = list[Point]
 
 
 class Figure(TypedDict):
@@ -16,13 +17,21 @@ class Figure(TypedDict):
 
 
 class Problem(TypedDict):
-    hole: list[Point]
+    hole: Hole
     epsilon: int
     figure: Figure
 
 
 def load_problem(problem_number: int) -> Problem:
     return json.load(open(path.join(PROBLEMS_DIR, f'{problem_number}.json')))
+
+
+def distance(p1: Point, p2: Point):
+    return (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2
+
+
+def dislikes(hole: Hole, pose: Figure):
+    return sum(min(distance(v, h) for v in pose["vertices"]) for h in hole)
 
 
 @click.command()
