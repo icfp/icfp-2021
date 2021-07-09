@@ -9,10 +9,11 @@ PROBLEMS_DIR = path.join(ROOT_DIR, 'problems')
 
 Point = tuple[int, int]
 Hole = list[Point]
+VertexIndex = int
 
 
 class Figure(TypedDict):
-    edges: list[Point]
+    edges: list[tuple[VertexIndex, VertexIndex]]
     vertices: list[Point]
 
 
