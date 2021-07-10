@@ -231,7 +231,8 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
     # b = opt.maximize(foo)
     # print(b)
 
-    res = opt.check()  # == sat
+    res = opt.check()
+    assert res == z3.sat
     # if str(res) != "sat":
     #     core = opt.unsat_core()
     #     print(core["foo20"])
@@ -239,6 +240,12 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
     print(res)
 
     model = opt.model()
+
+    for v in vertices:
+        x = model.eval(vertex_x(v))
+        y = model.eval(vertex_y(v))
+        print(f"[{x}, {y}],")
+
     pose: Pose = [
         Point(model.eval(vertex_x(v)).as_long(), model.eval(vertex_y(v)).as_long())
         for v in vertices
