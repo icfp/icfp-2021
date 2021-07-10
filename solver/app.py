@@ -65,8 +65,8 @@ def distance(p1: Point, p2: Point):
     delta_y = p1.y - p2.y
     if isinstance(delta_x, z3.BitVecRef) and isinstance(delta_y, z3.BitVecRef):
         foo = delta_x.size() + delta_y.size()
-        d_x = z3.ZeroExt(max(0, delta_y.size() - delta_x.size()) + foo, delta_x)
-        d_y = z3.ZeroExt(max(0, delta_x.size() - delta_y.size()) + foo, delta_y)
+        d_x = z3.SignExt(max(0, delta_y.size() - delta_x.size()) + foo, delta_x)
+        d_y = z3.SignExt(max(0, delta_x.size() - delta_y.size()) + foo, delta_y)
         delta_x, delta_y = d_x, d_y
     pow_x = delta_x * delta_x
     pow_y = delta_y * delta_y
@@ -106,10 +106,11 @@ def run(problem_number: int):
     # calculate edge distances
     initial_distances = [distance(p.figure.vertices[p1], p.figure.vertices[p2]) for p1, p2 in p.figure.edges]
     actual_distances = [distance(Point(xs[p1], ys[p1]), Point(xs[p2], ys[p2])) for p1, p2 in p.figure.edges]
+    # for i, a in list(zip(initial_distances, actual_distances))[5:7]:
     for i, a in zip(initial_distances, actual_distances):
         print(i, a)
         # this should work:
-        # opt.add(i == a)
+        opt.add(i == a)
 
         # opt.add(i-1 <= a)
         # opt.add(a <= i+1)
