@@ -155,7 +155,7 @@ def run(problem_number: int):
     for i, a in zip(initial_distances, actual_distances):
         # print(i, a)
         # this should work:
-        opt.add(a > i.min)
+        opt.add(a >= i.min)
         opt.add(a < i.max)
 
         # opt.add(i-1 <= a)
@@ -192,7 +192,7 @@ def run(problem_number: int):
 
         opt.add(z3.Or(*[vertex == figure_point for figure_point in vertices]))
 
-        opt.minimize(distance(Point(p_x, p_y), h))
+        # opt.minimize(distance(Point(p_x, p_y), h))
 
     opt.add(z3.Distinct(*min_hole_dist_points))
 
