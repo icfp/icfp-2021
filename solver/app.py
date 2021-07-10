@@ -59,7 +59,9 @@ def load_problem(problem_number: int) -> Problem:
 
 
 def distance(p1: Point, p2: Point):
-    return (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2
+    delta_x = p1.x - p2.x
+    delta_y = p1.y - p2.y
+    return (delta_x * delta_x) + (delta_y * delta_y)
 
 
 def dislikes(hole: Hole, pose: Figure):

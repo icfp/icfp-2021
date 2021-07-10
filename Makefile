@@ -17,3 +17,6 @@ lint:
 	poetry run flake8 .
 
 pr: pretty lint test
+
+vis:
+	open ./visualizer/index.html

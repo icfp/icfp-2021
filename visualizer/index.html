@@ -268,6 +268,27 @@
           .style("opacity", 0);
       });
 
+    // https://observablehq.com/@d3/voronoi-labels
+    const delaunay = d3.Delaunay.from(json.hole);
+    const voronoi = delaunay.voronoi([-1, -1, maxX + 1, maxY + 1]);
+
+    const cells = json.hole.map((d, i) => [d, voronoi.cellPolygon(i)]);
+
+    svg.append("g")
+      .attr("stroke", "orange")
+      .selectAll("path")
+      .data(cells)
+      .join("path")
+      .attr("d", ([d, cell]) => `M${d3.polygonCentroid(cell)}L${d}`);
+
+    svg.append("path")
+      .attr("fill", "none")
+      .attr("stroke", "#ccc")
+      .attr("d", voronoi.render());
+
+    svg.append("path")
+      .attr("d", delaunay.renderPoints(null, 2));
+
   }
   </script>
   <style>
