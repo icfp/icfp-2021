@@ -12,7 +12,6 @@ class Point(NamedTuple):
     x: int
     y: int
 
-
 Hole = List[Point]
 VertexIndex = int
 
@@ -20,6 +19,11 @@ VertexIndex = int
 class Edge(NamedTuple):
     source: VertexIndex
     target: VertexIndex
+
+
+class EdgeLengthRange(NamedTuple):
+    min: float
+    max: float
 
 
 @dataclass
@@ -33,6 +37,14 @@ class Problem:
     hole: Hole
     epsilon: int
     figure: Figure
+
+
+def calculateMinMaxEdgeLengths(self, epsilon: int, edge: Edge, vertices: List[Point]) -> EdgeLengthRange:
+        maxRatio = epsilon/1000000
+        edgeLength = distance(vertices[edge.source], vertices[edge.target])
+        minLength = edgeLength * (1-maxRatio)
+        maxLength = edgeLength * (1+maxRatio)
+        return (minLength, maxLength)
 
 
 def load_problem(problem_number: int) -> Problem:
