@@ -7,20 +7,22 @@ def in_polygon(p: Point, h: Hole) -> bool:
     # From https://www.baeldung.com/cs/geofencing-point-inside-polygon
     inside = False
     pairs = zip(h, h[1:] + [h[0]])
-    for pair in pairs:
+    for (fst, snd) in pairs:
         # Are both y coordinates of the vertices either above or below the point's y?
-        if not (
-            (pair[0].y < p.y and pair[1].y < p.y)
-            or (
-                pair[0].y > p.y
-                and pair[1].y > p.y
-                or (pair[0].y == p.y and pair[1].y == p.y)
-            )
-        ):
+        if not ((fst.y < p.y and snd.y < p.y) or (fst.y > p.y and snd.y > p.y)):
+            if fst.y == p.y == snd.y:
+                if (fst.x <= p.x <= snd.x) or (snd.x <= p.x <= fst.x):
+                    return True  # on the x edge between the two points
+                else:
+                    continue
+            elif fst.x == p.x == snd.x:
+                if (fst.y <= p.y <= snd.y) or (snd.y <= p.y <= fst.y):
+                    return True  # on the y edge between the two points
+
             # Compute sx
-            ratio = (p.y - pair[0].y) / (pair[1].y - pair[0].y)
-            product = (pair[1].x - pair[0].x) * ratio
-            sx = pair[0].x + product
+            ratio = (p.y - fst.y) / (snd.y - fst.y)
+            product = (snd.x - fst.x) * ratio
+            sx = fst.x + product
             if p.x > sx:
                 inside = not inside
 

@@ -151,8 +151,9 @@
       return path;
     }
 
-    let svg = d3.select("#v2");
+    d3.selectAll("#v2 > *").remove();
 
+    let svg = d3.select("#v2");
 
    svg
     .append('path')

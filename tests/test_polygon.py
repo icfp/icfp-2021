@@ -1,6 +1,6 @@
 from unittest import TestCase
 from parameterized import parameterized, param
-from solver.app import load_problem, Point, Problem
+from solver.app import load_problem, Point, Problem, Hole
 from solver.polygon import do_intersect, in_polygon
 
 
@@ -18,6 +18,27 @@ class TestPolygon(TestCase):
         problem: Problem = load_problem(1)
         actual: bool = in_polygon(point, problem.hole)
         self.assertEqual(actual, expected)
+
+    @parameterized.expand(
+        [
+            param(Point(1, 1), True),
+            param(Point(1, 2), True),
+            param(Point(1, 3), True),
+            param(Point(2, 1), True),
+            param(Point(2, 2), True),
+            param(Point(2, 3), True),
+            param(Point(3, 1), True),
+            param(Point(3, 2), True),
+            param(Point(3, 3), True),
+        ]
+    )
+    def test_in_square(self, point: Point, expected: bool) -> None:
+        hole: Hole = [Point(1, 1), Point(3, 1), Point(3, 3), Point(1, 3)]
+        actual: bool = in_polygon(point, hole)
+        if expected:
+            self.assertTrue(actual, f"Expected {point} to be in or on the hole")
+        else:
+            self.assertFalse(actual, f"Expected {point} not to be in or on the hole")
 
     @parameterized.expand(
         [

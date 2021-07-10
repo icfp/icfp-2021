@@ -1,46 +1,14 @@
 from pathlib import Path
-from typing import Iterable, List, NamedTuple
+from typing import Iterable, List, Dict
 import click
 import math
 import z3
 from pydantic.dataclasses import dataclass
-
+from .types import Point, Problem, Figure, Hole, EdgeLengthRange, Edge
+from . import polygon
 
 ROOT_DIR = Path(__file__).parent.parent
 PROBLEMS_DIR = ROOT_DIR / "problems"
-
-
-class Point(NamedTuple):
-    x: int
-    y: int
-
-
-Hole = List[Point]
-VertexIndex = int
-
-
-class Edge(NamedTuple):
-    source: VertexIndex
-    target: VertexIndex
-
-
-@dataclass(frozen=True)
-class EdgeLengthRange:
-    min: float
-    max: float
-
-
-@dataclass(frozen=True)
-class Figure:
-    edges: List[Edge]
-    vertices: List[Point]
-
-
-@dataclass(frozen=True)
-class Problem:
-    epsilon: int
-    hole: Hole
-    figure: Figure
 
 
 def min_max_edge_length(
@@ -81,10 +49,43 @@ def bits_for(xs: Iterable[int]) -> int:
     return int(math.log2(max(xs)) + 1)
 
 
+@dataclass(frozen=True)
+class ProblemStatistics:
+    min_x: int
+    min_y: int
+    max_x: int
+    max_y: int
+
+
+def compute_statistics(problem: Problem) -> ProblemStatistics:
+    hole = problem.hole
+    min_x = min(p.x for p in hole)
+    min_y = min(p.y for p in hole)
+
+    max_x = max(p.x for p in hole)
+    max_y = max(p.y for p in hole)
+
+    return ProblemStatistics(min_x=min_x, min_y=min_y, max_x=max_x, max_y=max_y)
+
+
+def make_in_hole_matrix(stats: ProblemStatistics, problem) -> Dict[Point, bool]:
+    return {
+        Point(x, y): polygon.in_polygon(Point(x, y), problem.hole)
+        for x in range(stats.max_x + 1)
+        for y in range(stats.max_y + 1)
+    }
+
+
 @click.command()
 @click.argument("problem_number")
 def run(problem_number: int):
     p = load_problem(problem_number)
+
+    stats = compute_statistics(p)
+
+    in_hole_map = make_in_hole_matrix(stats, p)
+
+    print(f"Map Matrix Size {len(in_hole_map)}")
 
     opt = z3.Optimize()
     # x_sort = z3.BitVecSort(bits_for(max(i.x, i.y) for i in p.hole) * 2)

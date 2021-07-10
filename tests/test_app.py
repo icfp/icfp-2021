@@ -1,7 +1,17 @@
 from typing import List
 from unittest import TestCase
 from parameterized import parameterized, param
-from solver.app import Edge, distance, Point, load_problem, min_max_edge_length
+from solver.app import (
+    distance,
+    Point,
+    load_problem,
+    Problem,
+    Figure,
+    Edge,
+    compute_statistics,
+    make_in_hole_matrix,
+    min_max_edge_length,
+)
 
 
 class TestApp(TestCase):
@@ -33,3 +43,25 @@ class TestApp(TestCase):
         actual = min_max_edge_length(epsilon, edge, vertices)
         self.assertEqual(actual.min, expectedMin)
         self.assertEqual(actual.max, expectedMax)
+
+
+    def test_simple_problem(self):
+        problem = Problem(
+            epsilon=0,
+            hole=[Point(1, 1), Point(1, 4), Point(4, 4), Point(4, 1)],
+            figure=Figure(edges=[], vertices=[]),
+        )
+
+        stats = compute_statistics(problem)
+
+        self.assertEqual(stats.min_x, 1)
+        self.assertEqual(stats.min_y, 1)
+        self.assertEqual(stats.max_x, 4)
+        self.assertEqual(stats.max_y, 4)
+
+        map = make_in_hole_matrix(stats, problem)
+        print(map)
+
+        self.assertTrue(map.get(Point(2, 2)))
+        self.assertTrue(map.get(Point(1, 4)))
+        self.assertFalse(map.get(Point(0, 1)))
