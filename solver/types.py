@@ -39,3 +39,8 @@ class Problem:
 @dataclass(frozen=True)
 class Solution:
     vertices: Pose
+
+
+@dataclass(frozen=True)
+class Identifier:
+    id: str

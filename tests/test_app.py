@@ -8,7 +8,8 @@ from solver.app import (
     Figure,
     compute_statistics,
     make_in_hole_matrix,
-    min_max_edge_length, make_ranges,
+    min_max_edge_length,
+    make_ranges,
 )
 
 
