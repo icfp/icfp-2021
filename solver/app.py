@@ -110,7 +110,7 @@ def make_ranges(
             yield YPointRange(x=x, y_inclusive_ranges=y_ranges)
 
 
-def internal_run(problem_number: int) -> Solution:
+def internal_run(problem_number: int, minimize: bool = False) -> Solution:
     p = load_problem(problem_number)
 
     stats = compute_statistics(p)
@@ -220,7 +220,8 @@ def internal_run(problem_number: int) -> Solution:
         )
     )
 
-    opt.minimize(total_dislikes)
+    if minimize:
+        opt.minimize(total_dislikes)
 
     # print(distances)
 
@@ -250,7 +251,8 @@ def internal_run(problem_number: int) -> Solution:
 
 @click.command()
 @click.argument("problem_number")
-def run(problem_number: int) -> Solution:
+@click.option("--minimize/--no-minimize", default=False)
+def run(problem_number: int, minimize: bool) -> Solution:
     return internal_run(problem_number)
 
 
