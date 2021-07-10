@@ -164,7 +164,9 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
         for p1, p2 in p.figure.edges
     ]
     # for limit, distance_var in list(zip(distance_limits, distance_vars))[5:7]:
-    for limit, distance_var, exact_distance in zip(distance_limits, distance_vars, exact_distances):
+    for limit, distance_var, exact_distance in zip(
+        distance_limits, distance_vars, exact_distances
+    ):
         # print(limit, distance_var)
 
         assert limit.min <= exact_distance <= limit.max
@@ -219,17 +221,16 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
     #     max(xs[0].size() - ys[0].size(), ys[0].size() - xs[0].size()) + mixed_size
     # )
 
+    min_dislike_sum = sum(
+        distance(Point(vertex_x(v), vertex_y(v)), h)
+        for v, h in zip(min_hole_dist_points, p.hole)
+    )
+
     total_dislikes = z3.BitVec(
-        "dislikes", 21
+        "dislikes", min_dislike_sum.size()
     )  # what size should this be and why is it 21??
 
-    opt.add(
-        total_dislikes
-        == sum(
-            distance(Point(vertex_x(v), vertex_y(v)), h)
-            for v, h in zip(min_hole_dist_points, p.hole)
-        )
-    )
+    opt.add(total_dislikes == min_dislike_sum)
 
     if minimize:
         opt.minimize(total_dislikes)
@@ -243,7 +244,7 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
     # print(b)
 
     res = opt.check()
-    assert res == z3.sat, 'Failed to solve'
+    assert res == z3.sat, "Failed to solve"
     # if str(res) != "sat":
     #     core = opt.unsat_core()
     #     print(core["foo20"])
@@ -263,6 +264,7 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
     ]
 
     solution: Solution = Solution(vertices=pose)
+
     print(solution)
     return solution
 
