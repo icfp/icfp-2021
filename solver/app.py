@@ -105,8 +105,14 @@ def run(problem_number: int):
     opt.add(z3.Distinct(*vertices))
 
     # calculate edge distances
-    initial_distances = [distance(p.figure.vertices[p1], p.figure.vertices[p2]) for p1, p2 in p.figure.edges]
-    actual_distances = [distance(Point(xs[p1], ys[p1]), Point(xs[p2], ys[p2])) for p1, p2 in p.figure.edges]
+    initial_distances = [
+        distance(p.figure.vertices[p1], p.figure.vertices[p2])
+        for p1, p2 in p.figure.edges
+    ]
+    actual_distances = [
+        distance(Point(xs[p1], ys[p1]), Point(xs[p2], ys[p2]))
+        for p1, p2 in p.figure.edges
+    ]
     # for i, a in list(zip(initial_distances, actual_distances))[5:7]:
     for i, a in zip(initial_distances, actual_distances):
         print(i, a)

@@ -30,20 +30,26 @@ class TestApp(TestCase):
         self.assertEqual(problem.hole[-1].x, 55)
         self.assertEqual(problem.hole[-1].y, 80)
 
-
     @parameterized.expand(
-        [param(100000, Edge(0, 1), [Point(2, 4), Point(4, 8)], 18, 22),
-        param(100000, Edge(0, 1), [Point(4, 8), Point(2, 4)], 18, 22),
-        param(40000, Edge(0, 1), [Point(4, 8), Point(2, 4)], 19.2, 20.8),
-        param(1000000, Edge(0, 1), [Point(4, 8), Point(2, 4)], 0, 40),
-        param(0, Edge(0, 1), [Point(2, 4), Point(4, 8)], 20, 20)]
+        [
+            param(100000, Edge(0, 1), [Point(2, 4), Point(4, 8)], 18, 22),
+            param(100000, Edge(0, 1), [Point(4, 8), Point(2, 4)], 18, 22),
+            param(40000, Edge(0, 1), [Point(4, 8), Point(2, 4)], 19.2, 20.8),
+            param(1000000, Edge(0, 1), [Point(4, 8), Point(2, 4)], 0, 40),
+            param(0, Edge(0, 1), [Point(2, 4), Point(4, 8)], 20, 20),
+        ]
     )
     def test_min_max_edge_length(
-        self, epsilon: int, edge: Edge, vertices: List[Point], expectedMin: float, expectedMax: float):
+        self,
+        epsilon: int,
+        edge: Edge,
+        vertices: List[Point],
+        expectedMin: float,
+        expectedMax: float,
+    ):
         actual = min_max_edge_length(epsilon, edge, vertices)
         self.assertEqual(actual.min, expectedMin)
         self.assertEqual(actual.max, expectedMax)
-
 
     def test_simple_problem(self):
         problem = Problem(
