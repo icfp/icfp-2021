@@ -51,6 +51,10 @@ class TestPolygon(TestCase):
             param(Point(5, 2), False),
             param(Point(6, 4), False),
             param(Point(5, 6), False),
+            param(Point(4, 5), True),
+            param(Point(4, 3), True),
+            param(Point(2, 3), True),
+            param(Point(2, 6), False),
         ]
     )
     def test_in_diamond(self, point: Point, expected: bool) -> None:
@@ -64,6 +68,9 @@ class TestPolygon(TestCase):
     @parameterized.expand(
         [
             param(Point(6, 4), False),
+            param(Point(5, 5), False),
+            param(Point(3, 5), True),
+            param(Point(6, 3), False),
         ]
     )
     def test_in_diamond_two(self, point: Point, expected: bool) -> None:
@@ -101,6 +108,10 @@ class TestPolygon(TestCase):
             param(Point(79, 45), True),
             param(Point(80, 45), False),
             param(Point(83, 45), False),
+            param(Point(10, 83), True),
+            param(Point(9, 83), True),
+            param(Point(5, 86), True),
+            param(Point(6, 85), True),
         ]
     )
     def test_problem_10_bug(self, point: Point, expected: bool) -> None:
