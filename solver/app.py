@@ -24,7 +24,8 @@ class Edge(NamedTuple):
     target: VertexIndex
 
 
-class EdgeLengthRange(NamedTuple):
+@dataclass(frozen=True)
+class EdgeLengthRange:
     min: float
     max: float
 
@@ -42,14 +43,15 @@ class Problem:
     figure: Figure
 
 
-def calculateMinMaxEdgeLengths(
-    self, epsilon: int, edge: Edge, vertices: List[Point]
+def min_max_edge_length(
+    epsilon: int, edge: Edge, vertices: List[Point]
 ) -> EdgeLengthRange:
-    maxRatio = epsilon / 1000000
-    edgeLength = distance(vertices[edge.source], vertices[edge.target])
-    minLength = edgeLength * (1 - maxRatio)
-    maxLength = edgeLength * (1 + maxRatio)
-    return (minLength, maxLength)
+    max_ratio = epsilon / 1000000
+    edge_length = distance(vertices[edge.source], vertices[edge.target])
+    min_length = edge_length * (1 - max_ratio)
+    max_length = edge_length * (1 + max_ratio)
+
+    return EdgeLengthRange(min=min_length, max=max_length)
 
 
 def load_problem(problem_number: int) -> Problem:
