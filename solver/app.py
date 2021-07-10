@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Tuple, List, NamedTuple
+from typing import List, NamedTuple
 import click
 from pydantic.dataclasses import dataclass
 
