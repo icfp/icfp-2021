@@ -1,6 +1,10 @@
 from pathlib import Path
+from pydantic.json import pydantic_encoder
 from typing import Iterable, List, Dict, NamedTuple
+from .types import Pose, Solution
+
 import click
+import json
 import math
 import z3
 from pydantic.dataclasses import dataclass
@@ -107,7 +111,7 @@ def make_ranges(
 
 @click.command()
 @click.argument("problem_number")
-def run(problem_number: int):
+def run(problem_number: int) -> Solution:
     p = load_problem(problem_number)
 
     stats = compute_statistics(p)
@@ -231,13 +235,16 @@ def run(problem_number: int):
     print(res)
 
     model = opt.model()
-    for v in vertices:
-        x = model.eval(vertex_x(v))
-        y = model.eval(vertex_y(v))
-        print(f"[{x},{y}],")
+    pose: Pose = [
+        Point(model.eval(vertex_x(v)).as_long(), model.eval(vertex_y(v)).as_long())
+        for v in vertices
+    ]
 
-    # print(model)
-    # print(model[foo])
+    solution: Solution = Solution(vertices=pose)
+    print(solution)
+    print(json.dumps(solution, default=pydantic_encoder))
+
+    return solution
 
 
 if __name__ == "__main__":
