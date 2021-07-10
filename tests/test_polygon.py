@@ -1,7 +1,10 @@
 from unittest import TestCase
-from parameterized import parameterized, param
-from solver.app import load_problem, Point, Problem, Hole
+
+from parameterized import param, parameterized  # type: ignore
+
+from solver.app import load_problem
 from solver.polygon import do_intersect, in_polygon
+from solver.types import Hole, Point, Problem
 
 
 class TestPolygon(TestCase):

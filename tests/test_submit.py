@@ -1,10 +1,11 @@
-from mock import patch
 from unittest import TestCase
-from solver.submit import submit
-from solver.types import Solution, Point
 
 import requests
 import requests_mock
+from mock import patch
+
+from solver.submit import submit
+from solver.types import Point, Solution
 
 
 class TestSubmit(TestCase):

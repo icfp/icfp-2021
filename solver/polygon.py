@@ -1,5 +1,4 @@
-from solver.app import Point
-from solver.app import Hole
+from .types import Hole, Point
 
 
 # Check if a point is on a line

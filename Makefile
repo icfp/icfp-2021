@@ -7,7 +7,7 @@ ifeq (run,$(firstword $(MAKECMDGOALS)))
   $(eval $(RUN_ARGS):;@:)
 endif
 
-.PHONY: lint pretty run setup test
+.PHONY: lint pretty run setup test types
 
 
 setup:
@@ -20,10 +20,14 @@ run:
 	poetry run solver $(RUN_ARGS)
 
 pretty:
+	poetry run isort .
 	poetry run black .
 
 lint:
 	poetry run flake8 .
+
+types:
+	poetry run mypy .
 
 pr: pretty lint test
 

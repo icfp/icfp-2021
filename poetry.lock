@@ -86,6 +86,17 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
+name = "dendroid"
+version = "1.1.1"
+description = "Search trees."
+category = "main"
+optional = false
+python-versions = ">=3.5"
+
+[package.dependencies]
+reprit = ">=0.3.1,<1.0.0"
+
+[[package]]
 name = "flake8"
 version = "3.9.2"
 description = "the modular source code checker: pep8 pyflakes and co"
@@ -113,6 +124,20 @@ description = "iniconfig: brain-dead simple config-ini parsing"
 category = "dev"
 optional = false
 python-versions = "*"
+
+[[package]]
+name = "isort"
+version = "5.9.2"
+description = "A Python utility / library to sort Python imports."
+category = "dev"
+optional = false
+python-versions = ">=3.6.1,<4.0"
+
+[package.extras]
+pipfile_deprecated_finder = ["pipreqs", "requirementslib"]
+requirements_deprecated_finder = ["pipreqs", "pip-api"]
+colors = ["colorama (>=0.4.3,<0.5.0)"]
+plugins = ["setuptools"]
 
 [[package]]
 name = "mccabe"
@@ -202,6 +227,17 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 dev = ["pre-commit", "tox"]
 
 [[package]]
+name = "prioq"
+version = "0.3.0"
+description = "Priority queue implementation."
+category = "main"
+optional = false
+python-versions = ">=3.5"
+
+[package.dependencies]
+reprit = ">=0.3.0"
+
+[[package]]
 name = "py"
 version = "1.10.0"
 description = "library with cross-python path, ini-parsing, io, code, log facilities"
@@ -276,6 +312,14 @@ description = "Alternative regular expression module, to replace re."
 category = "dev"
 optional = false
 python-versions = "*"
+
+[[package]]
+name = "reprit"
+version = "0.6.0"
+description = "Auto __repr__ method generation."
+category = "main"
+optional = false
+python-versions = ">=3.5.3"
 
 [[package]]
 name = "requests"
@@ -357,6 +401,19 @@ secure = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "cer
 socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
+name = "voronoi"
+version = "0.2.0"
+description = "Voronoi decomposition."
+category = "main"
+optional = false
+python-versions = ">=3.5"
+
+[package.dependencies]
+dendroid = ">=1.1.0"
+prioq = ">=0.3.0"
+reprit = ">=0.3.1"
+
+[[package]]
 name = "z3-solver"
 version = "4.8.10.0"
 description = "an efficient SMT solver library"
@@ -367,7 +424,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "3b0de715ce3dc429589557785c92cfb0fbb41426b74113d41ca2ac067e255e1f"
+content-hash = "dccf980961aee814b8d101ad31593b3978c9dd8bece35876ee33320e677732b6"
 
 [metadata.files]
 appdirs = [
@@ -402,6 +459,10 @@ colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
+dendroid = [
+    {file = "dendroid-1.1.1-py3-none-any.whl", hash = "sha256:a71c133dfca6b8031e42eb584de55a628628a2aa6295edb68057151fef6e73e2"},
+    {file = "dendroid-1.1.1.tar.gz", hash = "sha256:4ee67b8d715477c1099fbc7729efcb4d6cc23f5a1d15427777727a7110383f5d"},
+]
 flake8 = [
     {file = "flake8-3.9.2-py2.py3-none-any.whl", hash = "sha256:bf8fd333346d844f616e8d47905ef3a3384edae6b4e9beb0c5101e25e3110907"},
     {file = "flake8-3.9.2.tar.gz", hash = "sha256:07528381786f2a6237b061f6e96610a4167b226cb926e2aa2b6b1d78057c576b"},
@@ -413,6 +474,10 @@ idna = [
 iniconfig = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
     {file = "iniconfig-1.1.1.tar.gz", hash = "sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32"},
+]
+isort = [
+    {file = "isort-5.9.2-py3-none-any.whl", hash = "sha256:eed17b53c3e7912425579853d078a0832820f023191561fcee9d7cae424e0813"},
+    {file = "isort-5.9.2.tar.gz", hash = "sha256:f65ce5bd4cbc6abdfbe29afc2f0245538ab358c14590912df638033f157d555e"},
 ]
 mccabe = [
     {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},
@@ -466,6 +531,10 @@ pathspec = [
 pluggy = [
     {file = "pluggy-0.13.1-py2.py3-none-any.whl", hash = "sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d"},
     {file = "pluggy-0.13.1.tar.gz", hash = "sha256:15b2acde666561e1298d71b523007ed7364de07029219b604cf808bfa1c765b0"},
+]
+prioq = [
+    {file = "prioq-0.3.0-py3-none-any.whl", hash = "sha256:8fffcbdbe95a2c1c9a6656a360d39fbac39005e5b95787a21e27063d72bb604b"},
+    {file = "prioq-0.3.0.tar.gz", hash = "sha256:347cbeb226949faf3c347017a7b633aded0b85afe85847f26af2e1b63e9a9cc2"},
 ]
 py = [
     {file = "py-1.10.0-py2.py3-none-any.whl", hash = "sha256:3b80836aa6d1feeaa108e046da6423ab8f6ceda6468545ae8d02d9d58d18818a"},
@@ -554,6 +623,10 @@ regex = [
     {file = "regex-2021.7.6-cp39-cp39-win_amd64.whl", hash = "sha256:4c9c3155fe74269f61e27617529b7f09552fbb12e44b1189cebbdb24294e6e1c"},
     {file = "regex-2021.7.6.tar.gz", hash = "sha256:8394e266005f2d8c6f0bc6780001f7afa3ef81a7a2111fa35058ded6fce79e4d"},
 ]
+reprit = [
+    {file = "reprit-0.6.0-py3-none-any.whl", hash = "sha256:0a387ee2e00c7f589f02555b5d6b3de32e61f2fae1003759198b65eaea69e3a4"},
+    {file = "reprit-0.6.0.tar.gz", hash = "sha256:35600bb3a5f24cf320d60707f74f09b3c377939bb1e3bd1310560957cd8560f6"},
+]
 requests = [
     {file = "requests-2.25.1-py2.py3-none-any.whl", hash = "sha256:c210084e36a42ae6b9219e00e48287def368a26d03a048ddad7bfee44f75871e"},
     {file = "requests-2.25.1.tar.gz", hash = "sha256:27973dd4a904a4f13b263a19c866c13b92a39ed1c964655f025f3f8d3d75b804"},
@@ -582,6 +655,34 @@ typing-extensions = [
 urllib3 = [
     {file = "urllib3-1.26.6-py2.py3-none-any.whl", hash = "sha256:39fb8672126159acb139a7718dd10806104dec1e2f0f6c88aab05d17df10c8d4"},
     {file = "urllib3-1.26.6.tar.gz", hash = "sha256:f57b4c16c62fa2760b7e3d97c35b255512fb6b59a259730f36ba32ce9f8e342f"},
+]
+voronoi = [
+    {file = "voronoi-0.2.0-cp35-cp35m-macosx_10_9_x86_64.whl", hash = "sha256:6560cee1fc2c44188f87d4e25b346dcdb1a5cb5ead7de0bc2637c4e973677afd"},
+    {file = "voronoi-0.2.0-cp35-cp35m-manylinux2010_i686.whl", hash = "sha256:c64633a580b4a4b913e94588548c23bcd5747d70c8a024de883b9751d3d15b2e"},
+    {file = "voronoi-0.2.0-cp35-cp35m-manylinux2010_x86_64.whl", hash = "sha256:116fcd907dba9e15e4002fb3bb71466bd02e74ed6c2be64e6a603bc21890c406"},
+    {file = "voronoi-0.2.0-cp35-cp35m-win32.whl", hash = "sha256:6aa1b9c2c36644124748f916e18699444a074d64a43494cda8389bf45551dd58"},
+    {file = "voronoi-0.2.0-cp35-cp35m-win_amd64.whl", hash = "sha256:974ba6e944b1f26d980b9b1cb03fddf46cb2a9feaf91ec42f6097cb630c5c962"},
+    {file = "voronoi-0.2.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:fce55cdf9904c60a6cf24c02e821008bbd6ca40302bb73bc1797f71ce71fb204"},
+    {file = "voronoi-0.2.0-cp36-cp36m-manylinux2010_i686.whl", hash = "sha256:8daebb68d3473dc951214a976c2570b237b60f3f1c0e700b523ddd319281e218"},
+    {file = "voronoi-0.2.0-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:ce5225723a30c45940a581b329aeefd99227cb7a044aa877eb2406f075bcdb1e"},
+    {file = "voronoi-0.2.0-cp36-cp36m-win32.whl", hash = "sha256:f07b7ebc3278ecc6d4ef33df0ac6b5f1cdf69f01a0338330d4e4d595b5c5fa6a"},
+    {file = "voronoi-0.2.0-cp36-cp36m-win_amd64.whl", hash = "sha256:dccc89eca9bddb2dffc40edc41267b4ab5cfa7d46437511422409395c4fa25fd"},
+    {file = "voronoi-0.2.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:b6f6435602916eee4da995414bd006b343a112be38208622e272ca315ec386a0"},
+    {file = "voronoi-0.2.0-cp37-cp37m-manylinux2010_i686.whl", hash = "sha256:3da04c8ff90e7ef70fabfbac46f6e49225a69b917ea0f898810cad53fc9dbd1c"},
+    {file = "voronoi-0.2.0-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:518f4cd7194446d6ecfea468461e1d84b18c88cdfcc16431412592dc455a5e5d"},
+    {file = "voronoi-0.2.0-cp37-cp37m-win32.whl", hash = "sha256:63b67f8994bb65575c0d73a178b197b40ed390ae334876a14b27e78679a7a9e0"},
+    {file = "voronoi-0.2.0-cp37-cp37m-win_amd64.whl", hash = "sha256:bf4b0236e22b11d902683c1783ed6372c36c69a221ea80c84cc778b4c22b6785"},
+    {file = "voronoi-0.2.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:d5124edb74a7fc68a10ada192d7995c5b2b8a240f38d56876a752b453131e2ef"},
+    {file = "voronoi-0.2.0-cp38-cp38-manylinux2010_i686.whl", hash = "sha256:621f52161e82bba072bd33f0d81f784839f978e21ef1125dc6635b579a43d359"},
+    {file = "voronoi-0.2.0-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:6cf18575c70811511fe81a7df74499136fe711179d961eba758f40befcf1543a"},
+    {file = "voronoi-0.2.0-cp38-cp38-win32.whl", hash = "sha256:be72e5ecdb5d74b0f8a55f9ca537c452d7c86d6bfa37289188aeb6ef17cecc9a"},
+    {file = "voronoi-0.2.0-cp38-cp38-win_amd64.whl", hash = "sha256:052114f5f1c9a25e9ca5ea6f22092a9f6312fa2a742423ef0e6f0266448950b3"},
+    {file = "voronoi-0.2.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:6cf34e414f97933805ca5167899d15f5a94ecbb3a0c4036597334b891f5568bf"},
+    {file = "voronoi-0.2.0-cp39-cp39-manylinux2010_i686.whl", hash = "sha256:dd76948c47c312ebcc4c5e160f713006fe326c8e8d5763a96c19df351cc84ef7"},
+    {file = "voronoi-0.2.0-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:c8edc1db907bc32d0001419befb7b42123e6a45859a252a76c5d99233df2cf20"},
+    {file = "voronoi-0.2.0-cp39-cp39-win32.whl", hash = "sha256:ee4b2f5e35db2c15ea2adca6453897db3395b2be8e6203651ea711b72f582888"},
+    {file = "voronoi-0.2.0-cp39-cp39-win_amd64.whl", hash = "sha256:55c88a591c2eb4928100993e903a338022b8d44c2e160d096a336767de55100f"},
+    {file = "voronoi-0.2.0.tar.gz", hash = "sha256:85b621485259151b9939318d6ce7465b36728805d5c531b95b0783fc01cb9ab9"},
 ]
 z3-solver = [
     {file = "z3-solver-4.8.10.0.tar.gz", hash = "sha256:cd022a66524685bdd8b265027bd22f24c35f8db29a4287d005e0005757ffdc21"},

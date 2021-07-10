@@ -1,14 +1,15 @@
 import json
+import math
+from collections import defaultdict
 from pathlib import Path
-from typing import Iterable, List, Dict, NamedTuple
+from typing import Dict, Iterable, List, NamedTuple
 
 import click
-import math
 import z3
 from pydantic.dataclasses import dataclass
-from .types import Point, Pose, Problem, Figure, Hole, EdgeLengthRange, Solution
+
 from . import polygon
-from collections import defaultdict
+from .types import EdgeLengthRange, Figure, Hole, Point, Pose, Problem, Solution
 
 ROOT_DIR = Path(__file__).parent.parent
 PROBLEMS_DIR = ROOT_DIR / "problems"
@@ -164,7 +165,9 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
         for p1, p2 in p.figure.edges
     ]
     # for limit, distance_var in list(zip(distance_limits, distance_vars))[5:7]:
-    for limit, distance_var, exact_distance in zip(distance_limits, distance_vars, exact_distances):
+    for limit, distance_var, exact_distance in zip(
+        distance_limits, distance_vars, exact_distances
+    ):
         # print(limit, distance_var)
 
         assert limit.min <= exact_distance <= limit.max
@@ -243,7 +246,7 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
     # print(b)
 
     res = opt.check()
-    assert res == z3.sat, 'Failed to solve'
+    assert res == z3.sat, "Failed to solve"
     # if str(res) != "sat":
     #     core = opt.unsat_core()
     #     print(core["foo20"])

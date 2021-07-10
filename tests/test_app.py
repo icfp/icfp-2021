@@ -1,16 +1,16 @@
 from unittest import TestCase
-from parameterized import parameterized, param  # type: ignore
+
+from parameterized import param, parameterized  # type: ignore
+
 from solver.app import (
-    distance,
-    Point,
-    load_problem,
-    Problem,
-    Figure,
     compute_statistics,
+    distance,
+    load_problem,
     make_in_hole_matrix,
-    min_max_edge_length,
     make_ranges,
+    min_max_edge_length,
 )
+from solver.types import Figure, Point, Problem
 
 
 class TestApp(TestCase):

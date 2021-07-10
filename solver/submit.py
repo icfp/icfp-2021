@@ -1,12 +1,13 @@
-import requests
-import click
 import json
 import os
 
-from .app import internal_run
-from solver.types import Identifier
+import click
+import requests
 from pydantic import parse_obj_as
 from pydantic.json import pydantic_encoder
+
+from .app import internal_run
+from .types import Identifier
 
 
 def get_api_token() -> str:
