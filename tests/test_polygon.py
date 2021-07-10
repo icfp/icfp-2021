@@ -12,6 +12,10 @@ class TestPolygon(TestCase):
             param(Point(30, 5), True),
             param(Point(70, 95), True),
             param(Point(95, 95), True),
+            param(Point(55, 80), True),
+            param(Point(60, 80), True),
+            param(Point(85, 80), True),
+            param(Point(87, 80), False),
         ]
     )
     def test_in_polygon(self, point: Point, expected: bool) -> None:
@@ -24,6 +28,8 @@ class TestPolygon(TestCase):
 
     @parameterized.expand(
         [
+            param(Point(0, 1), False),
+            param(Point(0, 3), False),
             param(Point(1, 1), True),
             param(Point(1, 2), True),
             param(Point(1, 3), True),
@@ -33,10 +39,25 @@ class TestPolygon(TestCase):
             param(Point(3, 1), True),
             param(Point(3, 2), True),
             param(Point(3, 3), True),
+            param(Point(4, 1), False),
+            param(Point(4, 3), False),
         ]
     )
     def test_in_square(self, point: Point, expected: bool) -> None:
         hole: Hole = [Point(1, 1), Point(3, 1), Point(3, 3), Point(1, 3)]
+        actual: bool = in_polygon(point, hole)
+        if expected:
+            self.assertTrue(actual, f"Expected {point} to be in or on the hole")
+        else:
+            self.assertFalse(actual, f"Expected {point} not to be in or on the hole")
+
+    @parameterized.expand(
+        [
+            param(Point(0, 1), False),
+        ]
+    )
+    def test_in_square_two(self, point: Point, expected: bool) -> None:
+        hole: Hole = [Point(1, 1), Point(1, 3), Point(3, 3), Point(3, 1)]
         actual: bool = in_polygon(point, hole)
         if expected:
             self.assertTrue(actual, f"Expected {point} to be in or on the hole")

@@ -51,8 +51,6 @@ def in_polygon(p: Point, h: Hole) -> bool:
             if fst.y == p.y == snd.y:
                 if (fst.x <= p.x <= snd.x) or (snd.x <= p.x <= fst.x):
                     return True  # on the x edge between the two points
-                else:
-                    continue
             # Test whether all the points are on the same X line
             elif fst.x == p.x == snd.x:
                 if (fst.y <= p.y <= snd.y) or (snd.y <= p.y <= fst.y):
@@ -73,18 +71,26 @@ def in_polygon(p: Point, h: Hole) -> bool:
                 # If they are on the same side of the ray, ignore.
                 # If they cross the ray, drop below and test the intersection.
                 hit_end_vertex = False
-                if previous_start.y > p.y and snd.y > p.y:
-                    continue
-                elif previous_start.y < p.y and snd.y < p.y:
-                    continue
+                if previous_start.y >= p.y and snd.y >= p.y:
+                    # If we are the last edge and its horizontal, go to the hack
+                    if fst.y != snd.y:
+                        continue
+                elif previous_start.y <= p.y and snd.y <= p.y:
+                    if fst.y != snd.y:
+                        continue
 
             # This is a hack. If we are the last element and we hit the end vertex, check what the first element
-            # is, and compensate
+            # is, and compensate. The first element would have hit.
             if snd.y == p.y and index == (len(h) - 1):
                 # To compensate, we should compute intersection only if last edge and first edge are on the same
                 # side of the ray. This negates the incorrect computation on the first edge
                 next_snd = h[1]
-                if not (
+                if fst.y == snd.y:
+                    # Special case - the last line is horizontal.
+                    if p.x > snd.x:
+                        inside = not inside
+                    continue
+                elif not (
                     (fst.y < p.y and next_snd.y < p.y)
                     or (fst.y > p.y and next_snd.y > p.y)
                 ):
