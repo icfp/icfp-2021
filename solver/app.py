@@ -1,10 +1,11 @@
 from pathlib import Path
 from typing import Iterable, List, Dict, NamedTuple
+
 import click
 import math
 import z3
 from pydantic.dataclasses import dataclass
-from .types import Point, Problem, Figure, Hole, EdgeLengthRange
+from .types import Point, Pose, Problem, Figure, Hole, EdgeLengthRange, Solution
 from . import polygon
 
 ROOT_DIR = Path(__file__).parent.parent
@@ -105,9 +106,7 @@ def make_ranges(
         yield YPointRange(x=x, y_inclusive_ranges=y_ranges)
 
 
-@click.command()
-@click.argument("problem_number")
-def run(problem_number: int):
+def internal_run(problem_number: int) -> Solution:
     p = load_problem(problem_number)
 
     stats = compute_statistics(p)
@@ -231,13 +230,20 @@ def run(problem_number: int):
     print(res)
 
     model = opt.model()
-    for v in vertices:
-        x = model.eval(vertex_x(v))
-        y = model.eval(vertex_y(v))
-        print(f"[{x},{y}],")
+    pose: Pose = [
+        Point(model.eval(vertex_x(v)).as_long(), model.eval(vertex_y(v)).as_long())
+        for v in vertices
+    ]
 
-    # print(model)
-    # print(model[foo])
+    solution: Solution = Solution(vertices=pose)
+    print(solution)
+    return solution
+
+
+@click.command()
+@click.argument("problem_number")
+def run(problem_number: int) -> Solution:
+    return internal_run(problem_number)
 
 
 if __name__ == "__main__":

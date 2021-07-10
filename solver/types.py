@@ -8,6 +8,7 @@ class Point(NamedTuple):
 
 
 Hole = List[Point]
+Pose = List[Point]
 VertexIndex = int
 
 
@@ -33,3 +34,13 @@ class Problem:
     epsilon: int
     hole: Hole
     figure: Figure
+
+
+@dataclass(frozen=True)
+class Solution:
+    vertices: Pose
+
+
+@dataclass(frozen=True)
+class Identifier:
+    id: str

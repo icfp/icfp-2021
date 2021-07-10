@@ -10,19 +10,24 @@ packages = [
 
 [tool.poetry.scripts]
 solver = 'solver.app:run'
+submit = 'solver.submit:submit_problem'
 
 [tool.poetry.dependencies]
-python = "^3.9"
-z3-solver = "^4.8.10"
 click = "^8.0.1"
 pydantic = "^1.8.2"
+python = "^3.9"
+requests = "^2.25.1"
+z3-solver = "^4.8.10"
 
 [tool.poetry.dev-dependencies]
-mypy = "^0.910"
 black = "^21.6b0"
 flake8 = "^3.9.2"
-pytest = "^6.2.4"
+mock = "^4.0.3"
+mypy = "^0.910"
 parameterized = "^0.8.1"
+pytest = "^6.2.4"
+requests_mock = "^1.9.3"
+types-requests = "^2.25.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

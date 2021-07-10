@@ -1,5 +1,5 @@
 from unittest import TestCase
-from parameterized import parameterized, param
+from parameterized import parameterized, param  # type: ignore
 from solver.app import (
     distance,
     Point,
@@ -9,6 +9,7 @@ from solver.app import (
     compute_statistics,
     make_in_hole_matrix,
     min_max_edge_length,
+    make_ranges,
 )
 
 
@@ -69,3 +70,15 @@ class TestApp(TestCase):
         self.assertTrue(map.get(Point(2, 2)))
         self.assertTrue(map.get(Point(1, 4)))
         self.assertFalse(map.get(Point(0, 1)))
+
+    def test_problem_one_bug(self):
+        problem = load_problem(1)
+
+        stats = compute_statistics(problem)
+        map = make_in_hole_matrix(stats, problem)
+
+        self.assertFalse(map.get(Point(7, 9)))
+        for x in make_ranges(map, stats):
+            if x.x == 7:
+                self.assertEqual(x.y_inclusive_ranges[0].start, 5)
+                self.assertEqual(x.y_inclusive_ranges[0].end, 8)
