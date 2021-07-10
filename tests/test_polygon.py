@@ -42,6 +42,23 @@ class TestPolygon(TestCase):
 
     @parameterized.expand(
         [
+            param(Point(3, 2), True),
+            param(Point(4, 5), True),
+            param(Point(2, 3), True),
+            param(Point(5, 2), False),
+            param(Point(6, 4), False),
+        ]
+    )
+    def test_in_diamond(self, point: Point, expected: bool) -> None:
+        hole: Hole = [Point(3, 2), Point(5, 4), Point(3, 6), Point(1, 4)]
+        actual: bool = in_polygon(point, hole)
+        if expected:
+            self.assertTrue(actual, f"Expected {point} to be in or on the hole")
+        else:
+            self.assertFalse(actual, f"Expected {point} not to be in or on the hole")
+
+    @parameterized.expand(
+        [
             param(Point(1, 1), Point(10, 1), Point(1, 2), Point(10, 2), False),
             param(Point(10, 0), Point(0, 10), Point(0, 0), Point(10, 10), True),
             param(Point(-5, -5), Point(0, 0), Point(1, 1), Point(10, 10), False),

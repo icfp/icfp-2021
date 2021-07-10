@@ -2,11 +2,42 @@ from solver.app import Point
 from solver.app import Hole
 
 
+# Check if a point is on a line
+def on_line(p: Point, start: Point, end: Point):
+    dxc = p.x - start.x
+    dyc = p.y - start.y
+    dxl = end.x - start.x
+    dyl = end.y - start.y
+    cross = dxc * dyl - dyc * dxl
+    if cross != 0:
+        return False
+
+    if abs(dxl) >= abs(dyl):
+        if dxl > 0:
+            return start.x <= p.x and p.x <= end.x
+        else:
+            return end.x <= p.x and p.x <= start.x
+    else:
+        if dyl > 0:
+            return start.y <= p.y and p.y <= end.y
+        else:
+            return end.y <= p.y and p.y <= start.y
+
+
 # Check if a point is inside a closed polygon
 def in_polygon(p: Point, h: Hole) -> bool:
     # From https://www.baeldung.com/cs/geofencing-point-inside-polygon
+    # But this algorithm assumes the point on the polygon is "outside" but this
+    # doesn't work for us. So we will first test if the point is on the polygon.
     inside = False
     pairs = zip(h, h[1:] + [h[0]])
+
+    for (fst, snd) in pairs:
+        if on_line(p, fst, snd):
+            return True
+
+    pairs = zip(h, h[1:] + [h[0]])
+
     for (fst, snd) in pairs:
         # Are both y coordinates of the vertices either above or below the point's y?
         if not ((fst.y < p.y and snd.y < p.y) or (fst.y > p.y and snd.y > p.y)):
