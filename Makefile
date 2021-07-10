@@ -8,7 +8,7 @@ test:
 	poetry run pytest
 
 run:
-	poetry run solver 1
+	poetry run solver 2
 
 pretty:
 	poetry run black .

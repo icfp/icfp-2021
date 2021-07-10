@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Iterable, List, Dict
+from typing import Iterable, List, Dict, Tuple, NamedTuple
 import click
 import math
 import z3
@@ -68,12 +68,41 @@ def compute_statistics(problem: Problem) -> ProblemStatistics:
     return ProblemStatistics(min_x=min_x, min_y=min_y, max_x=max_x, max_y=max_y)
 
 
-def make_in_hole_matrix(stats: ProblemStatistics, problem) -> Dict[Point, bool]:
+InHoleLookup = Dict[Point, bool]
+
+
+def make_in_hole_matrix(stats: ProblemStatistics, problem) -> InHoleLookup:
     return {
         Point(x, y): polygon.in_polygon(Point(x, y), problem.hole)
         for x in range(stats.max_x + 1)
         for y in range(stats.max_y + 1)
     }
+
+
+class InclusiveRange(NamedTuple):
+    start: int
+    end: int
+
+
+class YPointRange(NamedTuple):
+    x: int
+    y_inclusive_ranges: List[InclusiveRange]
+
+
+def make_ranges(lookup: InHoleLookup, stats: ProblemStatistics) -> Iterable[YPointRange]:
+    for x in range(stats.max_x + 1):
+        y = 0
+        y_ranges = []
+        while y < stats.max_y + 1:
+            if lookup.get(Point(x, y)):
+                start_y = y
+                while lookup.get(Point(x, y)):
+                    y += 1
+                y_ranges.append(InclusiveRange(start=start_y, end=y))
+            else:
+                y += 1
+
+        yield YPointRange(x=x, y_inclusive_ranges=y_ranges)
 
 
 @click.command()
@@ -95,8 +124,8 @@ def run(problem_number: int):
 
     # translate vertices to z3
     vertices = p.figure.vertices
-    xs = [z3.BitVec(f"x_{i.x}", x_sort) for i in vertices]
-    ys = [z3.BitVec(f"y_{i.y}", y_sort) for i in vertices]
+    xs = [z3.BitVec(f"x_{point.x}_idx{idx}", x_sort) for idx, point in enumerate(vertices)]
+    ys = [z3.BitVec(f"y_{point.y}_idx{idx}", y_sort) for idx, point in enumerate(vertices)]
 
     vertex, mk_vertex, (vertex_x, vertex_y) = z3.TupleSort("vertex", (x_sort, y_sort))
     vertices = [mk_vertex(x, y) for x, y in zip(xs, ys)]
@@ -123,6 +152,16 @@ def run(problem_number: int):
         # opt.add(a <= i+1)
         # opt.assert_and_track(i == a, f"foo{i}")
 
+    ranges = list(make_ranges(in_hole_map, stats))
+
+    for idx, x_var in enumerate(xs):
+        y_var = ys[idx]
+
+        opt.add(z3.Or(
+            *[z3.And(x_var == x, z3.Or(*[z3.And(r.start <= y_var, y_var <= r.end) for r in y_ranges])) for x, y_ranges
+              in ranges]))
+
+
     # print(distances)
 
     edges = p.figure.edges
@@ -142,7 +181,7 @@ def run(problem_number: int):
     for v in vertices:
         x = model.eval(vertex_x(v))
         y = model.eval(vertex_y(v))
-        print(f"{x},{y}")
+        print(f"[{x},{y}],")
 
     # print(model)
     # print(model[foo])
