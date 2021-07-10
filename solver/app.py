@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Tuple, List
+from typing import Tuple, List, NamedTuple
 import click
 from pydantic.dataclasses import dataclass
 
@@ -8,7 +8,11 @@ ROOT_DIR = Path(__file__).parent.parent
 PROBLEMS_DIR = ROOT_DIR / "problems"
 
 
-Point = Tuple[int, int]
+class Point(NamedTuple):
+    x: int
+    y: int
+
+
 Hole = List[Point]
 VertexIndex = int
 
@@ -33,7 +37,7 @@ def load_problem(problem_number: int) -> Problem:
 
 
 def distance(p1: Point, p2: Point):
-    return (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2
+    return (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2
 
 
 def dislikes(hole: Hole, pose: Figure):
