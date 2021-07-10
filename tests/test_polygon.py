@@ -16,5 +16,5 @@ class TestPolygon(TestCase):
     )
     def test_in_polygon(self, point: Point, expected: bool) -> None:
         problem: Problem = load_problem(1)
-        actual: bool = in_polygon(point, problem["hole"])
+        actual: bool = in_polygon(point, problem.hole)
         self.assertEqual(actual, expected)
