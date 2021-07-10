@@ -1,6 +1,7 @@
 from solver.app import Point
 from solver.app import Hole
 
+
 # Check if a point is inside a closed polygon
 def in_polygon(p: Point, h: Hole) -> bool:
     # From https://www.baeldung.com/cs/geofencing-point-inside-polygon
