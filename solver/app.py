@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Iterable, List, Dict, Tuple, NamedTuple
+from typing import Iterable, List, Dict, NamedTuple
 import click
 import math
 import z3
@@ -89,7 +89,9 @@ class YPointRange(NamedTuple):
     y_inclusive_ranges: List[InclusiveRange]
 
 
-def make_ranges(lookup: InHoleLookup, stats: ProblemStatistics) -> Iterable[YPointRange]:
+def make_ranges(
+    lookup: InHoleLookup, stats: ProblemStatistics
+) -> Iterable[YPointRange]:
     for x in range(stats.max_x + 1):
         y = 0
         y_ranges = []
@@ -124,8 +126,12 @@ def run(problem_number: int):
 
     # translate vertices to z3
     vertices = p.figure.vertices
-    xs = [z3.BitVec(f"x_{point.x}_idx{idx}", x_sort) for idx, point in enumerate(vertices)]
-    ys = [z3.BitVec(f"y_{point.y}_idx{idx}", y_sort) for idx, point in enumerate(vertices)]
+    xs = [
+        z3.BitVec(f"x_{point.x}_idx{idx}", x_sort) for idx, point in enumerate(vertices)
+    ]
+    ys = [
+        z3.BitVec(f"y_{point.y}_idx{idx}", y_sort) for idx, point in enumerate(vertices)
+    ]
 
     vertex, mk_vertex, (vertex_x, vertex_y) = z3.TupleSort("vertex", (x_sort, y_sort))
     vertices = [mk_vertex(x, y) for x, y in zip(xs, ys)]
@@ -157,10 +163,22 @@ def run(problem_number: int):
     for idx, x_var in enumerate(xs):
         y_var = ys[idx]
 
-        opt.add(z3.Or(
-            *[z3.And(x_var == x, z3.Or(*[z3.And(r.start <= y_var, y_var <= r.end) for r in y_ranges])) for x, y_ranges
-              in ranges]))
-
+        opt.add(
+            z3.Or(
+                *[
+                    z3.And(
+                        x_var == x,
+                        z3.Or(
+                            *[
+                                z3.And(r.start <= y_var, y_var <= r.end)
+                                for r in y_ranges
+                            ]
+                        ),
+                    )
+                    for x, y_ranges in ranges
+                ]
+            )
+        )
 
     # print(distances)
 
