@@ -1,14 +1,11 @@
 from pathlib import Path
-from pydantic.json import pydantic_encoder
 from typing import Iterable, List, Dict, NamedTuple
-from .types import Pose, Solution
 
 import click
-import json
 import math
 import z3
 from pydantic.dataclasses import dataclass
-from .types import Point, Problem, Figure, Hole, EdgeLengthRange
+from .types import Point, Pose, Problem, Figure, Hole, EdgeLengthRange, Solution
 from . import polygon
 
 ROOT_DIR = Path(__file__).parent.parent
@@ -196,7 +193,7 @@ def internal_run(problem_number: int) -> Solution:
 
         # opt.minimize(distance(Point(p_x, p_y), h))
 
-    opt.add(z3.Distinct(*vertices))
+    opt.add(z3.Distinct(*min_hole_dist_points))
 
     # mixed_size = xs[0].size() + ys[0].size()
     # result_size = z3.BitVecSort(
@@ -240,8 +237,6 @@ def internal_run(problem_number: int) -> Solution:
 
     solution: Solution = Solution(vertices=pose)
     print(solution)
-    print(json.dumps(solution, default=pydantic_encoder))
-
     return solution
 
 
