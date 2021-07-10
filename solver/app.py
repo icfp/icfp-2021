@@ -17,9 +17,14 @@ Hole = List[Point]
 VertexIndex = int
 
 
+class Edge(NamedTuple):
+    source: VertexIndex
+    target: VertexIndex
+
+
 @dataclass
 class Figure:
-    edges: List[Tuple[VertexIndex, VertexIndex]]
+    edges: List[Edge]
     vertices: List[Point]
 
 

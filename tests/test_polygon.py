@@ -7,11 +7,11 @@ from solver.polygon import in_polygon
 class TestPolygon(TestCase):
     @parameterized.expand(
         [
-            param((100, 100), False),
-            param((30, 7), True),
-            param((30, 5), True),
-            param((70, 95), True),
-            param((95, 95), True),
+            param(Point(100, 100), False),
+            param(Point(30, 7), True),
+            param(Point(30, 5), True),
+            param(Point(70, 95), True),
+            param(Point(95, 95), True),
         ]
     )
     def test_in_polygon(self, point: Point, expected: bool) -> None:

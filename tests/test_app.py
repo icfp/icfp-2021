@@ -4,7 +4,9 @@ from solver.app import distance, Point, load_problem
 
 
 class TestApp(TestCase):
-    @parameterized.expand([param((1, 1), (2, 2), 2), param((4, 5), (5, 10), 26)])
+    @parameterized.expand(
+        [param(Point(1, 1), Point(2, 2), 2), param(Point(4, 5), Point(5, 10), 26)]
+    )
     def test_distance(self, first: Point, second: Point, expected: int):
         actual = distance(first, second)
         self.assertEqual(actual, expected)
@@ -16,4 +18,3 @@ class TestApp(TestCase):
 
         self.assertEqual(problem.hole[-1].x, 55)
         self.assertEqual(problem.hole[-1].y, 80)
-
