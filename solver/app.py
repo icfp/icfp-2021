@@ -6,8 +6,10 @@ import click
 import math
 import z3
 from pydantic.dataclasses import dataclass
-from .types import Point, Pose, Problem, Figure, Hole, EdgeLengthRange, Solution
+
 from . import polygon
+from .format import to_json
+from .types import Point, Pose, Problem, Figure, Hole, EdgeLengthRange, Solution
 from collections import defaultdict
 
 ROOT_DIR = Path(__file__).parent.parent
@@ -253,19 +255,14 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
 
     model = opt.model()
 
-    for v in vertices:
-        x = model.eval(vertex_x(v))
-        y = model.eval(vertex_y(v))
-        print(f"[{x}, {y}],")
-
     pose: Pose = [
         Point(model.eval(vertex_x(v)).as_long(), model.eval(vertex_y(v)).as_long())
         for v in vertices
     ]
 
     solution: Solution = Solution(vertices=pose)
-
-    print(solution)
+    print("Solution:")
+    print(to_json(solution))
     return solution
 
 

@@ -82,7 +82,7 @@
       let json = JSON.parse(input || JSON.stringify(sample));
 
       try {
-        let verts = JSON.parse(solution || JSON.stringify([]));
+        let verts = JSON.parse(solution || JSON.stringify([])).vertices;
         if (verts.length === json.figure.vertices.length) {
           json.figure.vertices = verts;
         }
@@ -373,12 +373,9 @@
 </canvas>
 
 <textarea id="solution" placeholder="solution vertices array" style="height: 397px; width: 200px;">
-  [
-
-
-
-
-  ]
+  {
+     "vertices": []
+  }
 </textarea>
 
 <script>

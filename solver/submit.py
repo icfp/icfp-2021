@@ -1,12 +1,11 @@
 import requests
 import click
-import json
 import os
 
 from .app import internal_run
-from solver.types import Identifier
+from .format import to_json
+from .types import Identifier
 from pydantic import parse_obj_as
-from pydantic.json import pydantic_encoder
 
 
 def get_api_token() -> str:
@@ -23,7 +22,7 @@ def submit(problem_id: int) -> Identifier:
 
     res = requests.post(
         f"https://poses.live/api/problems/{problem_id}/solutions",
-        data=json.dumps(solution, default=pydantic_encoder),
+        data=to_json(solution),
         headers={
             "Authorization": f"Bearer {get_api_token()}",
             "Content-Type": "application/json",
