@@ -171,7 +171,7 @@
       .data(json.hole)
         .enter().append("circle")
         .attr('class', 'hole')
-        .attr("r", 2)
+        .attr("r", 1)
         .attr("cx", function (d) {
           return d[0];
         })
@@ -179,12 +179,12 @@
           return d[1];
         })
         .attr("stroke", "#32CD32")
-        .attr("stroke-width", 1.5)
+        .attr("stroke-width", .9)
         .attr("fill", "#FFFFFF")
     .on('mouseover', function (d, data) {
       d3.select(this).transition()
         .duration('100')
-        .attr("r", 5);
+        .attr("r", 3);
 
       div.transition()
         .duration(100)
@@ -197,7 +197,7 @@
       .on('mouseout', function (d, i) {
         d3.select(this).transition()
           .duration('200')
-          .attr("r", 2);
+          .attr("r", 1);
 
         div.transition()
           .duration('200')
@@ -244,12 +244,12 @@
         return d[1];
       })
       .attr("stroke", "purple")
-      .attr("stroke-width", 1.5)
+      .attr("stroke-width", .9)
       .attr("fill", "#FFFFFF")
       .on('mouseover', function (evt, data) {
         d3.select(this).transition()
           .duration('100')
-          .attr("r", 4);
+          .attr("r", 3);
 
         div.transition()
           .duration(100)
@@ -262,7 +262,7 @@
       .on('mouseout', function (d, i) {
         d3.select(this).transition()
           .duration('200')
-          .attr("r", 2);
+          .attr("r", 1);
 
         div.transition()
           .duration('200')
@@ -287,8 +287,8 @@
       .attr("stroke", "#ccc")
       .attr("d", voronoi.render());
 
-    svg.append("path")
-      .attr("d", delaunay.renderPoints(null, 2));
+    // svg.append("path")
+    //   .attr("d", delaunay.renderPoints(null, 2));
 
   }
   </script>
@@ -331,6 +331,8 @@
     d3.select('svg')
       .call(zoom);
   }
+
+  initZoom();
 </script>
 </body>
 </html>

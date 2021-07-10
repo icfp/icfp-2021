@@ -12,14 +12,13 @@ PROBLEMS_DIR = ROOT_DIR / "problems"
 
 
 def min_max_edge_length(
-    epsilon: int, edge: Edge, vertices: List[Point]
-) -> EdgeLengthRange:
+    epsilon: int, source: Point, target: Point) -> EdgeLengthRange:
     max_ratio = epsilon / 1000000
-    edge_length = distance(vertices[edge.source], vertices[edge.target])
+    edge_length = distance(source, target)
     min_length = edge_length * (1 - max_ratio)
     max_length = edge_length * (1 + max_ratio)
 
-    return EdgeLengthRange(min=min_length, max=max_length)
+    return EdgeLengthRange(min=int(min_length), max=int(max_length))
 
 
 def load_problem(problem_number: int) -> Problem:
@@ -100,7 +99,7 @@ def make_ranges(
                 start_y = y
                 while lookup.get(Point(x, y)):
                     y += 1
-                y_ranges.append(InclusiveRange(start=start_y, end=y))
+                y_ranges.append(InclusiveRange(start=start_y, end=y-1))
             else:
                 y += 1
 
@@ -146,7 +145,7 @@ def run(problem_number: int):
 
     # calculate edge distances
     initial_distances = [
-        distance(p.figure.vertices[p1], p.figure.vertices[p2])
+        min_max_edge_length(p.epsilon, p.figure.vertices[p1], p.figure.vertices[p2])
         for p1, p2 in p.figure.edges
     ]
     actual_distances = [
@@ -155,9 +154,10 @@ def run(problem_number: int):
     ]
     # for i, a in list(zip(initial_distances, actual_distances))[5:7]:
     for i, a in zip(initial_distances, actual_distances):
-        print(i, a)
+        # print(i, a)
         # this should work:
-        opt.add(i == a)
+        opt.add(a > i.min)
+        opt.add(a < i.max)
 
         # opt.add(i-1 <= a)
         # opt.add(a <= i+1)
@@ -183,8 +183,6 @@ def run(problem_number: int):
             )
         )
 
-    # mixed_size = xs[0].size() + ys[0].size()
-    # result_size = z3.BitVecSort(max(xs[0].size() - ys[0].size(), ys[0].size() - xs[0].size()) + mixed_size)
 
     min_hole_dist_points = []
     for idx, h in enumerate(p.hole):
@@ -200,7 +198,15 @@ def run(problem_number: int):
 
     opt.add(z3.Distinct(*min_hole_dist_points))
 
-    # opt.minimize(sum(min_hole_dist_points, h))
+
+    mixed_size = xs[0].size() + ys[0].size()
+    result_size = z3.BitVecSort(max(xs[0].size() - ys[0].size(), ys[0].size() - xs[0].size()) + mixed_size)
+
+    total_dislikes = z3.BitVec(f"dislikes", 21)  # what size should this be and why is it 21??
+
+    opt.add(total_dislikes == sum(distance(Point(vertex_x(v), vertex_y(v)), h) for v, h in zip(min_hole_dist_points, p.hole)))
+
+    opt.minimize(total_dislikes)
 
     # print(distances)
 

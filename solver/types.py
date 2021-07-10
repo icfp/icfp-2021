@@ -18,8 +18,8 @@ class Edge(NamedTuple):
 
 @dataclass(frozen=True)
 class EdgeLengthRange:
-    min: float
-    max: float
+    min: int
+    max: int
 
 
 @dataclass(frozen=True)
