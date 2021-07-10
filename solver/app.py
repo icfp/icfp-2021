@@ -71,7 +71,7 @@ def dislikes(hole: Hole, pose: Figure):
 
 
 def bits_for(xs: Iterable[int]) -> int:
-    return math.log2(max(xs) + 1)
+    return int(math.log2(max(xs)) + 1)
 
 
 @click.command()
@@ -88,7 +88,7 @@ def run(problem_number: int):
     xs = [z3.BitVec(f"x_{i.x}", x_sort) for i in vertices]
     ys = [z3.BitVec(f"y_{i.y}", y_sort) for i in vertices]
 
-    vertex, mk_vertex, _ = z3.TupleSort("vertex", (x_sort, y_sort))
+    vertex, mk_vertex, (vertex_x, vertex_y) = z3.TupleSort("vertex", (x_sort, y_sort))
     vertices = [mk_vertex(x, y) for x, y in zip(xs, ys)]
 
     # add a distinct constraint on the vertex points
@@ -97,21 +97,20 @@ def run(problem_number: int):
     edges = p.figure.edges
     print(edges)
 
-    foo = z3.BitVec("foo", x_sort)
-    bar = z3.BitVec("bar", x_sort)
-    opt.add(foo * foo > 48)
-    opt.add(foo > 1)
-    opt.add(bar < 10)
-    opt.add(foo + 1 == bar)
-    b = opt.maximize(foo)
-    print(b)
+    # b = opt.maximize(foo)
+    # print(b)
 
     res = opt.check()  # == sat
     print(res)
 
     model = opt.model()
-    print(model)
-    print(model[foo])
+    for v in vertices:
+        x = model.eval(vertex_x(v))
+        y = model.eval(vertex_y(v))
+        print(f"{x},{y}")
+
+    # print(model)
+    # print(model[foo])
 
 
 if __name__ == "__main__":
