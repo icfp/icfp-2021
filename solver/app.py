@@ -4,21 +4,20 @@ import click
 import math
 import z3
 from pydantic.dataclasses import dataclass
-from .types import Point, Problem, Figure, Hole, EdgeLengthRange, Edge
+from .types import Point, Problem, Figure, Hole, EdgeLengthRange
 from . import polygon
 
 ROOT_DIR = Path(__file__).parent.parent
 PROBLEMS_DIR = ROOT_DIR / "problems"
 
 
-def min_max_edge_length(
-    epsilon: int, source: Point, target: Point) -> EdgeLengthRange:
+def min_max_edge_length(epsilon: int, source: Point, target: Point) -> EdgeLengthRange:
     max_ratio = epsilon / 1000000
     edge_length = distance(source, target)
     min_length = edge_length * (1 - max_ratio)
     max_length = edge_length * (1 + max_ratio)
 
-    return EdgeLengthRange(min=int(min_length), max=int(max_length))
+    return EdgeLengthRange(min=math.ceil(min_length), max=int(max_length))
 
 
 def load_problem(problem_number: int) -> Problem:
@@ -99,7 +98,7 @@ def make_ranges(
                 start_y = y
                 while lookup.get(Point(x, y)):
                     y += 1
-                y_ranges.append(InclusiveRange(start=start_y, end=y-1))
+                y_ranges.append(InclusiveRange(start=start_y, end=y - 1))
             else:
                 y += 1
 
@@ -183,7 +182,6 @@ def run(problem_number: int):
             )
         )
 
-
     min_hole_dist_points = []
     for idx, h in enumerate(p.hole):
         p_x = z3.BitVec(f"hole_idx{idx}_dist_x", x_sort)
@@ -198,13 +196,22 @@ def run(problem_number: int):
 
     opt.add(z3.Distinct(*min_hole_dist_points))
 
+    # mixed_size = xs[0].size() + ys[0].size()
+    # result_size = z3.BitVecSort(
+    #     max(xs[0].size() - ys[0].size(), ys[0].size() - xs[0].size()) + mixed_size
+    # )
 
-    mixed_size = xs[0].size() + ys[0].size()
-    result_size = z3.BitVecSort(max(xs[0].size() - ys[0].size(), ys[0].size() - xs[0].size()) + mixed_size)
+    total_dislikes = z3.BitVec(
+        "dislikes", 21
+    )  # what size should this be and why is it 21??
 
-    total_dislikes = z3.BitVec(f"dislikes", 21)  # what size should this be and why is it 21??
-
-    opt.add(total_dislikes == sum(distance(Point(vertex_x(v), vertex_y(v)), h) for v, h in zip(min_hole_dist_points, p.hole)))
+    opt.add(
+        total_dislikes
+        == sum(
+            distance(Point(vertex_x(v), vertex_y(v)), h)
+            for v, h in zip(min_hole_dist_points, p.hole)
+        )
+    )
 
     opt.minimize(total_dislikes)
 

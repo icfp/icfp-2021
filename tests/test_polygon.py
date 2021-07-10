@@ -69,3 +69,28 @@ class TestPolygon(TestCase):
     ) -> None:
         actual: bool = do_intersect(p1, q1, p2, q2)
         self.assertEqual(actual, expected)
+
+    # See discord for source of test case
+    # https://discord.com/channels/855340178745720832/855340178745720834/863434048621510686
+    @parameterized.expand(
+        [
+            param(Point(58, 31), True),
+            param(Point(60, 31), False),
+            param(Point(63, 27), False),
+            param(Point(65, 31), False),
+            param(Point(70, 31), False),
+            param(Point(77, 31), False),
+            param(Point(80, 31), False),
+            param(Point(79, 45), True),
+            param(Point(80, 45), False),
+            param(Point(83, 45), False),
+        ]
+    )
+    def test_problem_10_bug(self, point: Point, expected: bool) -> None:
+        problem = load_problem(10)
+        hole: Hole = problem.hole
+        actual: bool = in_polygon(point, hole)
+        if expected:
+            self.assertTrue(actual, f"Expected {point} to be in or on the hole")
+        else:
+            self.assertFalse(actual, f"Expected {point} not to be in or on the hole")
