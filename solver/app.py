@@ -155,13 +155,24 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
         min_max_edge_length(p.epsilon, p.figure.vertices[p1], p.figure.vertices[p2])
         for p1, p2 in p.figure.edges
     ]
+    exact_distances = [
+        distance(p.figure.vertices[p1], p.figure.vertices[p2])
+        for p1, p2 in p.figure.edges
+    ]
     distance_vars = [
         distance(Point(xs[p1], ys[p1]), Point(xs[p2], ys[p2]))
         for p1, p2 in p.figure.edges
     ]
     # for limit, distance_var in list(zip(distance_limits, distance_vars))[5:7]:
-    for limit, distance_var in zip(distance_limits, distance_vars):
+    for limit, distance_var, exact_distance in zip(distance_limits, distance_vars, exact_distances):
         # print(limit, distance_var)
+
+        assert limit.min <= exact_distance <= limit.max
+
+        # Exact distances
+        # opt.add(distance_var == exact_distance)
+
+        # Min/max
         opt.add(distance_var >= limit.min)
         opt.add(distance_var <= limit.max)
 
@@ -232,7 +243,7 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
     # print(b)
 
     res = opt.check()
-    assert res == z3.sat
+    assert res == z3.sat, 'Failed to solve'
     # if str(res) != "sat":
     #     core = opt.unsat_core()
     #     print(core["foo20"])
