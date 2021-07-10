@@ -14,7 +14,6 @@ class TestPolygon(TestCase):
             param(Point(95, 95), True),
         ]
     )
-
     def test_in_polygon(self, point: Point, expected: bool) -> None:
         problem: Problem = load_problem(1)
         actual: bool = in_polygon(point, problem.hole)
