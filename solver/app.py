@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Iterable, List, Dict, NamedTuple
 
@@ -7,6 +8,7 @@ import z3
 from pydantic.dataclasses import dataclass
 from .types import Point, Pose, Problem, Figure, Hole, EdgeLengthRange, Solution
 from . import polygon
+from collections import defaultdict
 
 ROOT_DIR = Path(__file__).parent.parent
 PROBLEMS_DIR = ROOT_DIR / "problems"
@@ -71,11 +73,13 @@ InHoleLookup = Dict[Point, bool]
 
 
 def make_in_hole_matrix(stats: ProblemStatistics, problem) -> InHoleLookup:
-    return {
-        Point(x, y): polygon.in_polygon(Point(x, y), problem.hole)
-        for x in range(stats.max_x + 1)
-        for y in range(stats.max_y + 1)
-    }
+    lookup = defaultdict(lambda: False)
+    for x in range(stats.max_x + 1):
+        for y in range(stats.max_y + 1):
+            point = Point(x, y)
+            lookup[point] = polygon.in_polygon(point, problem.hole)
+
+    return lookup
 
 
 class InclusiveRange(NamedTuple):
@@ -92,8 +96,8 @@ def make_ranges(
     lookup: InHoleLookup, stats: ProblemStatistics
 ) -> Iterable[YPointRange]:
     for x in range(stats.max_x + 1):
-        y = 0
         y_ranges = []
+        y = 0
         while y < stats.max_y + 1:
             if lookup.get(Point(x, y)):
                 start_y = y
@@ -102,8 +106,8 @@ def make_ranges(
                 y_ranges.append(InclusiveRange(start=start_y, end=y - 1))
             else:
                 y += 1
-
-        yield YPointRange(x=x, y_inclusive_ranges=y_ranges)
+        if y_ranges:
+            yield YPointRange(x=x, y_inclusive_ranges=y_ranges)
 
 
 def internal_run(problem_number: int) -> Solution:
@@ -112,6 +116,11 @@ def internal_run(problem_number: int) -> Solution:
     stats = compute_statistics(p)
 
     in_hole_map = make_in_hole_matrix(stats, p)
+
+    json.dump(
+        [[point.x, point.y] for point, inside in in_hole_map.items() if inside],
+        open("map.json", "w"),
+    )
 
     print(f"Map Matrix Size {len(in_hole_map)}")
 
@@ -142,20 +151,19 @@ def internal_run(problem_number: int) -> Solution:
     opt.add(z3.Distinct(*vertices))
 
     # calculate edge distances
-    initial_distances = [
+    distance_limits = [
         min_max_edge_length(p.epsilon, p.figure.vertices[p1], p.figure.vertices[p2])
         for p1, p2 in p.figure.edges
     ]
-    actual_distances = [
+    distance_vars = [
         distance(Point(xs[p1], ys[p1]), Point(xs[p2], ys[p2]))
         for p1, p2 in p.figure.edges
     ]
-    # for i, a in list(zip(initial_distances, actual_distances))[5:7]:
-    for i, a in zip(initial_distances, actual_distances):
-        # print(i, a)
-        # this should work:
-        opt.add(a >= i.min)
-        opt.add(a < i.max)
+    # for limit, distance_var in list(zip(distance_limits, distance_vars))[5:7]:
+    for limit, distance_var in zip(distance_limits, distance_vars):
+        # print(limit, distance_var)
+        opt.add(distance_var >= limit.min)
+        opt.add(distance_var <= limit.max)
 
         # opt.add(i-1 <= a)
         # opt.add(a <= i+1)

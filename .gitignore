@@ -27,3 +27,4 @@ dist/
 *.pyc
 *.iml
 .idea/
+map.json

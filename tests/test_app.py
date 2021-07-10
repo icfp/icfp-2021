@@ -82,3 +82,22 @@ class TestApp(TestCase):
             if x.x == 7:
                 self.assertEqual(x.y_inclusive_ranges[0].start, 5)
                 self.assertEqual(x.y_inclusive_ranges[0].end, 8)
+
+    def test_problem_10_ranges(self):
+        problem = load_problem(10)
+
+        stats = compute_statistics(problem)
+        map = make_in_hole_matrix(stats, problem)
+        ranges = make_ranges(map, stats)
+
+        x_lookup = dict((r.x, r.y_inclusive_ranges) for r in ranges)
+
+        print(x_lookup)
+
+        self.assertEqual(x_lookup[12], [(9, 14), (52, 86)])
+        self.assertEqual(x_lookup[79], [(45, 74)])
+        self.assertEqual(x_lookup[82], [(69, 75)])
+        self.assertEqual(x_lookup[83], [(76, 76)])
+        self.assertEqual(x_lookup[10], [(9, 9), (62, 86)])
+        self.assertEqual(x_lookup[6], [(82, 86)])
+        self.assertEqual(x_lookup[5], [(86, 86)])
