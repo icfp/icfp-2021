@@ -15,6 +15,7 @@ solver = 'solver.app:run'
 python = "^3.9"
 z3-solver = "^4.8.10"
 click = "^8.0.1"
+pydantic = "^1.8.2"
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.910"

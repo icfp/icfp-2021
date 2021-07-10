@@ -1,30 +1,35 @@
-from typing import TypedDict
-import json
-import os.path as path
+from pathlib import Path
+from typing import Tuple, List
 import click
-
-ROOT_DIR = path.abspath(path.join(path.dirname(__file__), ".."))
-PROBLEMS_DIR = path.join(ROOT_DIR, "problems")
+from pydantic.dataclasses import dataclass
 
 
-Point = tuple[int, int]
-Hole = list[Point]
+ROOT_DIR = Path(__file__).parent.parent
+PROBLEMS_DIR = ROOT_DIR / "problems"
+
+
+Point = Tuple[int, int]
+Hole = List[Point]
 VertexIndex = int
 
 
-class Figure(TypedDict):
-    edges: list[tuple[VertexIndex, VertexIndex]]
-    vertices: list[Point]
+@dataclass
+class Figure:
+    edges: List[Tuple[VertexIndex, VertexIndex]]
+    vertices: List[Point]
 
 
-class Problem(TypedDict):
+@dataclass
+class Problem:
     hole: Hole
     epsilon: int
     figure: Figure
 
 
 def load_problem(problem_number: int) -> Problem:
-    return json.load(open(path.join(PROBLEMS_DIR, f"{problem_number}.json")))
+    return Problem.__pydantic_model__.parse_file(
+        PROBLEMS_DIR / f"{problem_number}.json"
+    )
 
 
 def distance(p1: Point, p2: Point):
