@@ -42,7 +42,7 @@ def distance(p1: Point, p2: Point):
 
 
 def dislikes(hole: Hole, pose: Figure):
-    return sum(min(distance(v, h) for v in pose["vertices"]) for h in hole)
+    return sum(min(distance(v, h) for v in pose.vertices) for h in hole)
 
 
 def bits_for(xs: Iterable[int]) -> int:
@@ -119,10 +119,13 @@ def run(problem_number: int):
     print(f"Map Matrix Size {len(in_hole_map)}")
 
     opt = z3.Optimize()
+
+    x_bits = bits_for(i.x for i in p.hole)
+    y_bits = bits_for(i.y for i in p.hole)
+
     # x_sort = z3.BitVecSort(bits_for(max(i.x, i.y) for i in p.hole) * 2)
-    x_sort = z3.BitVecSort(bits_for(i.x for i in p.hole))
-    y_sort = z3.BitVecSort(bits_for(i.y for i in p.hole))
-    y_sort = x_sort
+    x_sort = z3.BitVecSort(x_bits)
+    y_sort = z3.BitVecSort(y_bits)
 
     # translate vertices to z3
     vertices = p.figure.vertices
@@ -132,6 +135,8 @@ def run(problem_number: int):
     ys = [
         z3.BitVec(f"y_{point.y}_idx{idx}", y_sort) for idx, point in enumerate(vertices)
     ]
+
+    point_vars = [Point(x, y) for x, y in zip(xs, ys)]
 
     vertex, mk_vertex, (vertex_x, vertex_y) = z3.TupleSort("vertex", (x_sort, y_sort))
     vertices = [mk_vertex(x, y) for x, y in zip(xs, ys)]
@@ -160,9 +165,7 @@ def run(problem_number: int):
 
     ranges = list(make_ranges(in_hole_map, stats))
 
-    for idx, x_var in enumerate(xs):
-        y_var = ys[idx]
-
+    for x_var, y_var in point_vars:
         opt.add(
             z3.Or(
                 *[
@@ -180,10 +183,29 @@ def run(problem_number: int):
             )
         )
 
+    # mixed_size = xs[0].size() + ys[0].size()
+    # result_size = z3.BitVecSort(max(xs[0].size() - ys[0].size(), ys[0].size() - xs[0].size()) + mixed_size)
+
+    min_hole_dist_points = []
+    for idx, h in enumerate(p.hole):
+        p_x = z3.BitVec(f"hole_idx{idx}_dist_x", x_sort)
+        p_y = z3.BitVec(f"hole_idx{idx}_dist_y", y_sort)
+
+        vertex = mk_vertex(p_x, p_y)
+        min_hole_dist_points.append(vertex)
+
+        opt.add(z3.Or(*[vertex == figure_point for figure_point in vertices]))
+
+        opt.minimize(distance(Point(p_x, p_y), h))
+
+    opt.add(z3.Distinct(*min_hole_dist_points))
+
+    # opt.minimize(sum(min_hole_dist_points, h))
+
     # print(distances)
 
-    edges = p.figure.edges
-    print(edges)
+    # edges = p.figure.edges
+    # print(edges)
 
     # b = opt.maximize(foo)
     # print(b)
