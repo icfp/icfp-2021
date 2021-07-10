@@ -29,25 +29,27 @@ class EdgeLengthRange(NamedTuple):
     max: float
 
 
-@dataclass
+@dataclass(frozen=True)
 class Figure:
     edges: List[Edge]
     vertices: List[Point]
 
 
-@dataclass
+@dataclass(frozen=True)
 class Problem:
-    hole: Hole
     epsilon: int
+    hole: Hole
     figure: Figure
 
 
-def calculateMinMaxEdgeLengths(self, epsilon: int, edge: Edge, vertices: List[Point]) -> EdgeLengthRange:
-        maxRatio = epsilon/1000000
-        edgeLength = distance(vertices[edge.source], vertices[edge.target])
-        minLength = edgeLength * (1-maxRatio)
-        maxLength = edgeLength * (1+maxRatio)
-        return (minLength, maxLength)
+def calculateMinMaxEdgeLengths(
+    self, epsilon: int, edge: Edge, vertices: List[Point]
+) -> EdgeLengthRange:
+    maxRatio = epsilon / 1000000
+    edgeLength = distance(vertices[edge.source], vertices[edge.target])
+    minLength = edgeLength * (1 - maxRatio)
+    maxLength = edgeLength * (1 + maxRatio)
+    return (minLength, maxLength)
 
 
 def load_problem(problem_number: int) -> Problem:
