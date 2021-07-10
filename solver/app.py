@@ -109,9 +109,7 @@ def make_ranges(
         yield YPointRange(x=x, y_inclusive_ranges=y_ranges)
 
 
-@click.command()
-@click.argument("problem_number")
-def run(problem_number: int) -> Solution:
+def internal_run(problem_number: int) -> Solution:
     p = load_problem(problem_number)
 
     stats = compute_statistics(p)
@@ -198,7 +196,7 @@ def run(problem_number: int) -> Solution:
 
         # opt.minimize(distance(Point(p_x, p_y), h))
 
-    opt.add(z3.Distinct(*min_hole_dist_points))
+    opt.add(z3.Distinct(*vertices))
 
     # mixed_size = xs[0].size() + ys[0].size()
     # result_size = z3.BitVecSort(
@@ -245,6 +243,12 @@ def run(problem_number: int) -> Solution:
     print(json.dumps(solution, default=pydantic_encoder))
 
     return solution
+
+
+@click.command()
+@click.argument("problem_number")
+def run(problem_number: int) -> Solution:
+    return internal_run(problem_number)
 
 
 if __name__ == "__main__":
