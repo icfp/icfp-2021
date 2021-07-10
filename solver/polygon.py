@@ -36,19 +36,59 @@ def in_polygon(p: Point, h: Hole) -> bool:
         if on_line(p, fst, snd):
             return True
 
+    # Pairs is going to start with the last edge (which is_first_element will skip ray testing on) to prime the state
+    # pairs = zip([h[len(h)-1]] + h, h + [h[0]])
     pairs = zip(h, h[1:] + [h[0]])
+    hit_end_vertex = False
+    previous_start = Point(0, 0)
 
-    for (fst, snd) in pairs:
+    for (index, (fst, snd)) in enumerate(pairs):
         # Are both y coordinates of the vertices either above or below the point's y?
-        if not ((fst.y < p.y and snd.y < p.y) or (fst.y > p.y and snd.y > p.y)):
+        if (fst.y < p.y and snd.y < p.y) or (fst.y > p.y and snd.y > p.y):
+            continue
+        else:
+            # Test whether all the points are on the same Y line
             if fst.y == p.y == snd.y:
                 if (fst.x <= p.x <= snd.x) or (snd.x <= p.x <= fst.x):
                     return True  # on the x edge between the two points
                 else:
                     continue
+            # Test whether all the points are on the same X line
             elif fst.x == p.x == snd.x:
                 if (fst.y <= p.y <= snd.y) or (snd.y <= p.y <= fst.y):
                     return True  # on the y edge between the two points
+
+            # Test whether we hit the second point. This means we hit the vertex at the end of the line.
+            # We will remember this, and not test intersection.
+            # However, only do this if we are not the last element
+            if snd.y == p.y and index < (len(h) - 1):
+                hit_end_vertex = True
+                previous_start = fst
+                continue
+
+            # Test whether the previous point was on a vertex
+            if hit_end_vertex:
+                # Ok - so now we need to check whether this line is on the same plane as the previous line
+                # we compare previous_start with snd
+                # If they are on the same side of the ray, ignore.
+                # If they cross the ray, drop below and test the intersection.
+                hit_end_vertex = False
+                if previous_start.y > p.y and snd.y > p.y:
+                    continue
+                elif previous_start.y < p.y and snd.y < p.y:
+                    continue
+
+            # This is a hack. If we are the last element and we hit the end vertex, check what the first element
+            # is, and compensate
+            if snd.y == p.y and index == (len(h) - 1):
+                # To compensate, we should compute intersection only if last edge and first edge are on the same
+                # side of the ray. This negates the incorrect computation on the first edge
+                next_snd = h[1]
+                if not (
+                    (fst.y < p.y and next_snd.y < p.y)
+                    or (fst.y > p.y and next_snd.y > p.y)
+                ):
+                    continue
 
             # Compute sx
             ratio = (p.y - fst.y) / (snd.y - fst.y)
