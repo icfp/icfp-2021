@@ -67,7 +67,6 @@ def orientation(p: Point, q: Point, r: Point):
 # The main function that returns true if
 # the line segment 'p1q1' and 'p2q2' intersect.
 def do_intersect(p1: Point, q1: Point, p2: Point, q2: Point):
-
     # Find the 4 orientations required for
     # the general and special cases
     o1 = orientation(p1, q1, p2)
