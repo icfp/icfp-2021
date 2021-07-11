@@ -3,7 +3,7 @@ import math
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Iterable, List
+from typing import Iterable, List, Dict
 
 import click
 import z3
@@ -154,9 +154,10 @@ def make_ranges(
             yield YPointRange(x=x, y_inclusive_ranges=y_ranges)
 
 
-def edges_in_hole(lookup: InHoleLookup, hole: Hole) -> Iterable[tuple[Point, Point]]:
+def edges_in_hole(lookup: InHoleLookup, hole: Hole) -> Dict[Point, List[Point]]:
     inside_points = [point for point, inside in lookup.items() if inside]
     hole_edges = list(zip(hole, hole[1:] + [hole[0]]))
+    lookup = defaultdict(list)
     for p1 in inside_points:
         for p2 in inside_points:
             if p1.x == p2.x and p1.y == p2.y:
@@ -164,7 +165,9 @@ def edges_in_hole(lookup: InHoleLookup, hole: Hole) -> Iterable[tuple[Point, Poi
 
             for e1, e2 in hole_edges:
                 if not polygon.do_intersect(p1, p2, e1, e2):
-                    yield p1, p2
+                    lookup[p1].append(p2)
+
+    return lookup
 
 
 def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Output:
@@ -176,7 +179,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     map_points = [[point.x, point.y] for point, inside in in_hole_map.items() if inside]
 
-    allowed_edges = list(edges_in_hole(in_hole_map, problem.hole))
+    allowed_edges = edges_in_hole(in_hole_map, problem.hole)
 
     print(allowed_edges)
 
@@ -229,6 +232,26 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
                         *[z3.And(r.start <= y_var, y_var <= r.end) for r in y_ranges]
                     ),
                 )
+                for x, y_ranges in ranges
+            ]
+
+            opt.add(z3.Or(*point_constraints))
+
+        return {}
+
+    @constraint
+    def constrain_to_edges_in_hole() -> DebugVars:
+        for source, target in problem.figure.edges:
+            # v_source = vertices[source]
+            # v_target = vertices[target]
+
+            point_constraints = [
+                z3.And(
+                    x_var == x,
+                    z3.Or(
+                        *[z3.And(r.start <= y_var, y_var <= r.end) for r in y_ranges]
+                    ),
+                    )
                 for x, y_ranges in ranges
             ]
 
