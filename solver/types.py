@@ -1,4 +1,5 @@
-from typing import List, NamedTuple, Any
+from typing import Any, List, NamedTuple
+
 from pydantic.dataclasses import dataclass
 
 

@@ -1,6 +1,8 @@
 from unittest import TestCase
-from parameterized import parameterized, param
-from solver.app import load_problem, Point, Problem, Hole
+
+from parameterized import param, parameterized
+
+from solver.app import Hole, Point, Problem, load_problem
 from solver.polygon import do_intersect, in_polygon
 
 

@@ -28,7 +28,7 @@ lint:
 isort:
 	poetry run isort .
 
-pr: pretty lint test
+pr: pretty isort lint test
 
 vis:
 	open ./visualizer/index.html

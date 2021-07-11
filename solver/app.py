@@ -1,18 +1,17 @@
-from pathlib import Path
-from typing import Iterable, List, Dict, NamedTuple, Callable
-
-import click
+import datetime
 import math
 import time
-import datetime
+from collections import defaultdict
+from pathlib import Path
+from typing import Callable, Dict, Iterable, List, NamedTuple
 
+import click
 import z3
 from pydantic.dataclasses import dataclass
 
 from . import polygon
 from .format import to_json
-from .types import Point, Pose, Problem, Figure, Hole, EdgeLengthRange, Solution, Output
-from collections import defaultdict
+from .types import EdgeLengthRange, Figure, Hole, Output, Point, Pose, Problem, Solution
 
 ROOT_DIR = Path(__file__).parent.parent
 PROBLEMS_DIR = ROOT_DIR / "problems"

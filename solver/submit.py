@@ -1,11 +1,12 @@
-import requests
-import click
 import os
+
+import click
+import requests
+from pydantic import parse_obj_as
 
 from .app import _run
 from .format import to_json
 from .types import Identifier
-from pydantic import parse_obj_as
 
 
 def get_api_token() -> str:
