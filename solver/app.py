@@ -279,8 +279,6 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
 
         assert res == z3.sat, "Failed to solve"
 
-    res = opt.check()
-
     if res != z3.sat:
         print(
             to_json(
