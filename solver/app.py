@@ -3,7 +3,7 @@ import math
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Iterable, List, Dict
+from typing import Dict, Iterable, List
 
 import click
 import z3
@@ -179,9 +179,9 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     map_points = [[point.x, point.y] for point, inside in in_hole_map.items() if inside]
 
-    allowed_edges = edges_in_hole(in_hole_map, problem.hole)
+    allowed_edges: Dict[Point, List[Point]] = edges_in_hole(in_hole_map, problem.hole)
 
-    print(allowed_edges)
+    # print(allowed_edges)
 
     print(f"Map Matrix Size {len(in_hole_map)}")
 
@@ -242,20 +242,25 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
     @constraint
     def constrain_to_edges_in_hole() -> DebugVars:
         for source, target in problem.figure.edges:
-            # v_source = vertices[source]
-            # v_target = vertices[target]
+            v_source = vertices[source]
+            v_target = vertices[target]
 
-            point_constraints = [
-                z3.And(
-                    x_var == x,
-                    z3.Or(
-                        *[z3.And(r.start <= y_var, y_var <= r.end) for r in y_ranges]
-                    ),
+            conditions = []
+            for allowed_source, allowed_targets in allowed_edges.items():
+                conditions.append(
+                    z3.And(
+                        v_source == mk_vertex(allowed_source.x, allowed_source.y),
+                        z3.Or(
+                            *[
+                                v_target
+                                == mk_vertex(allowed_target.x, allowed_target.y)
+                                for allowed_target in allowed_targets
+                            ]
+                        ),
                     )
-                for x, y_ranges in ranges
-            ]
+                )
 
-            opt.add(z3.Or(*point_constraints))
+            opt.add(z3.Or(*conditions))
 
         return {}
 
@@ -361,6 +366,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
     constraints: List[Constraint] = [
         constrain_to_xy_in_hole,
         constrain_unique_positions.disable,
+        constrain_to_edges_in_hole.disable,
         minimize_dislikes,
         virtual_points.disable,
         constrain_distances,
@@ -412,7 +418,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
     output = Output(problem=problem, solution=solution, map_points=map_points)
     print("Solution:")
 
-    print(output)
+    print(to_json(output))
     return output
 
 
