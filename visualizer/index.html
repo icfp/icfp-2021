@@ -77,73 +77,29 @@
     function render() {
       console.log("Rendering");
       const input = document.getElementById("json").value;
-      const solution = document.getElementById("solution").value;
 
       let json = JSON.parse(input || JSON.stringify(sample));
 
-      try {
-        let verts = JSON.parse(solution || JSON.stringify([])).vertices;
-        if (verts.length === json.figure.vertices.length) {
-          json.figure.vertices = verts;
-        }
-      } catch (e) {
-        console.error(e)
-      }
+      let mapPoints = json.mapPoints || []
+      let figure = json.figure || {}
 
-      const space = document.getElementById("space");
-      const ctx = space.getContext("2d");
+      let solution = Object.create(figure)
+      solution.vertices = (json.solution || {}).vertices || []
 
-
-      function drawHole(points, color = 'black') {
-        const start = _.head(points);
-        const rest = _.tail(points);
-
-        const path = ctx.beginPath();
-        ctx.strokeStyle = color;
-        ctx.fillStyle = "white";
-        ctx.moveTo(start[0], start[1]);
-
-        for (let i = 0; i < rest.length; i++) {
-          ctx.lineTo(rest[i][0], rest[i][1]);
-          ctx.stroke();
-        }
-
-        ctx.closePath();
-        ctx.stroke();
-        ctx.fill();
-      }
-
-      function drawFigure(figure, color = 'black') {
-        let edges = figure.edges;
-        let vertices = figure.vertices;
-
-        const path = ctx.beginPath();
-        ctx.strokeStyle = color;
-        for (let i = 0; i < edges.length; i++) {
-          let start = vertices[edges[i][0]];
-          let end = vertices[edges[i][1]];
-          ctx.moveTo(start[0], start[1]);
-          ctx.lineTo(end[0], end[1]);
-          ctx.stroke();
-        }
-
-        ctx.closePath();
-        ctx.stroke();
-      }
 
       // reset and scale canvas
-      space.width = space.width;
+      // space.width = space.width;
       const maxX = _.maxBy(json.hole, v => v[0])[0] + 10;
       const maxY = _.maxBy(json.hole, v => v[1])[1] + 10;
 
       console.log('Max X', maxX, 'Max Y', maxY);
       console.log('Scale', 800 / maxX, 400 / maxY)
 
-      ctx.scale(800 / maxX, 400 / maxY);
+      // ctx.scale(800 / maxX, 400 / maxY);
 
-      drawHole(json.hole);
-      drawFigure(json.figure, 'red');
-      console.log('Done');
+      // drawHole(jso rn.hole);
+      // drawFigure(json.figure, 'red');
+      // console.log('Done');
 
       function makeD3Path(points) {
         const path = d3.path();
@@ -163,6 +119,8 @@
       }
 
       d3.selectAll("#v2 > *").remove();
+
+      d3.select("#svgContainer").attr("viewBox", `0 0 ${maxX}, ${maxY}`)
 
       let svg = d3.select("#v2");
 
@@ -219,6 +177,8 @@
       function makeD3FigurePath(figure) {
         let edges = figure.edges;
         let vertices = figure.vertices;
+        console.log(edges)
+        console.log(vertices)
 
         const path = d3.path();
         for (let i = 0; i < edges.length; i++) {
@@ -233,52 +193,104 @@
         return path;
       }
 
-      const figurePath = makeD3FigurePath(json.figure);
+      if (document.getElementById("figureCheckbox").checked) {
+        const figurePath = makeD3FigurePath(json.figure);
 
-      svg
-        .append('path')
-        .attr('d', figurePath.toString())
-        .attr('stroke', 'red')
-        .attr('fill', 'none')
-        .attr('stroke-width', '1.5');
+        svg
+          .append('path')
+          .attr('d', figurePath.toString())
+          .attr('stroke', 'red')
+          .attr('fill', 'none')
+          .attr('stroke-width', '1.5');
 
-      svg
-        .selectAll('circle.figure')
-        .data(json.figure.vertices)
-        .enter().append("circle")
-        .attr('class', 'figure')
-        .attr("r", 1)
-        .attr("cx", function (d) {
-          return d[0];
-        })
-        .attr("cy", function (d) {
-          return d[1];
-        })
-        .attr("stroke", "purple")
-        .attr("stroke-width", .9)
-        .attr("fill", "#FFFFFF")
-        .on('mouseover', function (evt, data) {
-          d3.select(this).transition()
-            .duration('100')
-            .attr("r", 3);
+        svg
+          .selectAll('circle.figure')
+          .data(figure.vertices || [])
+          .enter().append("circle")
+          .attr('class', 'figure')
+          .attr("r", 1)
+          .attr("cx", function (d) {
+            return d[0];
+          })
+          .attr("cy", function (d) {
+            return d[1];
+          })
+          .attr("stroke", "purple")
+          .attr("stroke-width", .9)
+          .attr("fill", "#FFFFFF")
+          .on('mouseover', function (evt, data) {
+            d3.select(this).transition()
+              .duration('100')
+              .attr("r", 3);
 
-          div.transition()
-            .duration(100)
-            .style("opacity", 1);
+            div.transition()
+              .duration(100)
+              .style("opacity", 1);
 
-          div.text(`x: ${data[0]}, y: ${data[1]}`)
-            .style("left", (evt.pageX + 10) + "px")
-            .style("top", (evt.pageY - 15) + "px");
-        })
-        .on('mouseout', function (d, i) {
-          d3.select(this).transition()
-            .duration('200')
-            .attr("r", 1);
+            div.text(`x: ${data[0]}, y: ${data[1]}`)
+              .style("left", (evt.pageX + 10) + "px")
+              .style("top", (evt.pageY - 15) + "px");
+          })
+          .on('mouseout', function (d, i) {
+            d3.select(this).transition()
+              .duration('200')
+              .attr("r", 1);
 
-          div.transition()
-            .duration('200')
-            .style("opacity", 0);
-        });
+            div.transition()
+              .duration('200')
+              .style("opacity", 0);
+          });
+      }
+
+      if (document.getElementById("solutionCheckbox").checked) {
+
+        const figurePath = makeD3FigurePath(solution);
+
+        svg
+          .append('path')
+          .attr('d', figurePath.toString())
+          .attr('stroke', 'blue')
+          .attr('fill', 'none')
+          .attr('stroke-width', '1.5');
+
+        svg
+          .selectAll('circle.solution')
+          .data(solution.vertices || [])
+          .enter().append("circle")
+          .attr('class', 'figure')
+          .attr("r", 1)
+          .attr("cx", function (d) {
+            return d[0];
+          })
+          .attr("cy", function (d) {
+            return d[1];
+          })
+          .attr("stroke", "purple")
+          .attr("stroke-width", .9)
+          .attr("fill", "#FFFFFF")
+          .on('mouseover', function (evt, data) {
+            d3.select(this).transition()
+              .duration('100')
+              .attr("r", 3);
+
+            div.transition()
+              .duration(100)
+              .style("opacity", 1);
+
+            div.text(`x: ${data[0]}, y: ${data[1]}`)
+              .style("left", (evt.pageX + 10) + "px")
+              .style("top", (evt.pageY - 15) + "px");
+          })
+          .on('mouseout', function (d, i) {
+            d3.select(this).transition()
+              .duration('200')
+              .attr("r", 1);
+
+            div.transition()
+              .duration('200')
+              .style("opacity", 0);
+          });
+      }
 
       // https://observablehq.com/@d3/voronoi-labels
       const delaunay = d3.Delaunay.from(json.hole);
@@ -286,62 +298,74 @@
 
       const cells = json.hole.map((d, i) => [d, voronoi.cellPolygon(i)]);
 
-      svg.append("g")
-        .attr("stroke", "orange")
-        .selectAll("path")
-        .data(cells)
-        .join("path")
-        .attr("d", ([d, cell]) => `M${d3.polygonCentroid(cell)}L${d}`);
 
-      svg.append("path")
-        .attr("fill", "none")
-        .attr("stroke", "#ccc")
-        .attr("d", voronoi.render());
+      if (mapPoints.length > 0) {
+        document.getElementById("pointsLabel").hidden = false;
+      }
+      if (mapPoints.length > 0) {
+        document.getElementById("solutionLabel").hidden = false;
+      }
+
+      if (document.getElementById("voronoiCheckbox").checked) {
+        svg.append("g")
+          .attr("stroke", "orange")
+          .selectAll("path")
+          .data(cells)
+          .join("path")
+          .attr("d", ([d, cell]) => `M${d3.polygonCentroid(cell)}L${d}`);
+
+        svg.append("path")
+          .attr("fill", "none")
+          .attr("stroke", "#ccc")
+          .attr("d", voronoi.render());
+      }
 
       // svg.append("path")
       //   .attr("d", delaunay.renderPoints(null, 2));
 
-      const mapPoints = document.getElementById("points");
+      // const mapPoints = document.getElementById("points");
 
       const pointRadius = .2;
 
-      svg
-        .selectAll('circle.inhole')
-        .data(JSON.parse(mapPoints.value || '[]'))
-        .enter().append("circle")
-        .attr('class', 'inhole')
-        .attr("r", pointRadius)
-        .attr("cx", function (d) {
-          return d[0];
-        })
-        .attr("cy", function (d) {
-          return d[1];
-        })
-        .attr("stroke", "yellow")
-        .attr("stroke-width", .3)
-        .attr("fill", "#FFFFFF")
-        .on('mouseover', function (evt, data) {
-          d3.select(this).transition()
-            .duration('100')
-            .attr("r", pointRadius * 2);
+      if (document.getElementById("pointsCheckbox").checked) {
+        svg
+          .selectAll('circle.inhole')
+          .data(mapPoints)
+          .enter().append("circle")
+          .attr('class', 'inhole')
+          .attr("r", pointRadius)
+          .attr("cx", function (d) {
+            return d[0];
+          })
+          .attr("cy", function (d) {
+            return d[1];
+          })
+          .attr("stroke", "yellow")
+          .attr("stroke-width", .3)
+          .attr("fill", "#FFFFFF")
+          .on('mouseover', function (evt, data) {
+            d3.select(this).transition()
+              .duration('100')
+              .attr("r", pointRadius * 2);
 
-          div.transition()
-            .duration(100)
-            .style("opacity", 1);
+            div.transition()
+              .duration(100)
+              .style("opacity", 1);
 
-          div.text(`x: ${data[0]}, y: ${data[1]}`)
-            .style("left", (evt.pageX + 10) + "px")
-            .style("top", (evt.pageY - 15) + "px");
-        })
-        .on('mouseout', function (d, i) {
-          d3.select(this).transition()
-            .duration('200')
-            .attr("r", pointRadius);
+            div.text(`x: ${data[0]}, y: ${data[1]}`)
+              .style("left", (evt.pageX + 10) + "px")
+              .style("top", (evt.pageY - 15) + "px");
+          })
+          .on('mouseout', function (d, i) {
+            d3.select(this).transition()
+              .duration('200')
+              .attr("r", pointRadius);
 
-          div.transition()
-            .duration('200')
-            .style("opacity", 0);
-        });
+            div.transition()
+              .duration('200')
+              .style("opacity", 0);
+          });
+      }
     }
   </script>
   <style>
@@ -359,24 +383,36 @@
   </style>
 </head>
 <body>
-<svg viewBox="0 0 800 400" width="800" height="400" style="background: grey">
+<div width="100%", height="600">
+<svg id="svgContainer" width="1000" height="600" style="background: grey">
   <g id="v2"></g>
 </svg>
 
-<textarea id="json" placeholder="problem json (leave empty for sample)" style="height: 397px; width: 200px;">
+<textarea id="json" onchange="render()" placeholder="problem json (leave empty for sample)" style="height: 600px; width: 500px;">
 </textarea>
-<textarea id="points" placeholder="in hole points json array (map.json)" style="height: 397px; width: 200px;">
-</textarea>
-<button id="doit" onclick="render()">Render</button>
+</div>
+<div/>
+<label id="figureLabel">
+  <input type="checkbox" id="figureCheckbox" name="figureCheckbox" onclick="render()" checked/>
+  Original Figure
+</label>
+<input type="checkbox" id="voronoiCheckbox" name="voronoiCheckbox" onclick="render()" checked> Voronois </input>
+<label id="pointsLabel" hidden>
+  <input type="checkbox" id="pointsCheckbox" name="pointsCheckbox" onclick="render()"/>
+  Map Points
+</label>
+<label id="solutionLabel" hidden>
+  <input type="checkbox" id="solutionCheckbox" name="solutionCheckbox" onclick="render()" checked/>
+  Solution Figure
+</label>
 
-<canvas id="space" width="800" height="400" style="border:1px solid #000000; background: grey">
-</canvas>
+<!--<button id="doit" onclick="render()">Render</button>-->
 
-<textarea id="solution" placeholder="solution vertices array" style="height: 397px; width: 200px;">
-  {
-     "vertices": []
-  }
-</textarea>
+<!--<textarea id="solution" placeholder="solution vertices array" style="height: 397px; width: 200px;">-->
+<!--  {-->
+<!--     "vertices": []-->
+<!--  }-->
+<!--</textarea>-->
 
 <script>
   render();

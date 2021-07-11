@@ -2,7 +2,7 @@ import requests
 import click
 import os
 
-from .app import internal_run
+from .app import _run
 from .format import to_json
 from .types import Identifier
 from pydantic import parse_obj_as
@@ -17,7 +17,7 @@ def get_api_token() -> str:
 
 
 def submit(problem_id: int) -> Identifier:
-    solution = internal_run(problem_id)
+    solution = _run(problem_id)
     print(f"Submitting solution {solution.vertices} for problem {problem_id}")
 
     res = requests.post(

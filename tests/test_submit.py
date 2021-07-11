@@ -9,7 +9,7 @@ import requests_mock
 
 class TestSubmit(TestCase):
     @requests_mock.Mocker()
-    @patch("solver.submit.internal_run")
+    @patch("solver.submit._run")
     @patch("solver.submit.get_api_token")
     def test_submit(self, requests_mock, token_mock, run_mock):
         problem_id = 1
@@ -27,7 +27,7 @@ class TestSubmit(TestCase):
         self.assertEqual(response.id, expected_identifier)
 
     @requests_mock.Mocker()
-    @patch("solver.submit.internal_run")
+    @patch("solver.submit._run")
     @patch("solver.submit.get_api_token")
     def test_submit_fails(self, requests_mock, token_mock, run_mock):
         problem_id = 2

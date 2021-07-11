@@ -98,7 +98,9 @@ def in_polygon(p: Point, h: Hole) -> bool:
                     idx += 1
                     next_snd = h[idx]
 
-                if (fst.y < p.y and next_snd.y < p.y) or (fst.y > p.y and next_snd.y > p.y):
+                if (fst.y < p.y and next_snd.y < p.y) or (
+                    fst.y > p.y and next_snd.y > p.y
+                ):
                     continue
 
             # Compute sx

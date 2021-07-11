@@ -112,12 +112,13 @@ def make_ranges(
             yield YPointRange(x=x, y_inclusive_ranges=y_ranges)
 
 
-def internal_run(problem_number: int, minimize: bool = False) -> Solution:
-    p = load_problem(problem_number)
+def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Solution:
 
-    stats = compute_statistics(p)
+    problem = load_problem(problem_number)
 
-    in_hole_map = make_in_hole_matrix(stats, p)
+    stats = compute_statistics(problem)
+
+    in_hole_map = make_in_hole_matrix(stats, problem)
 
     json.dump(
         [[point.x, point.y] for point, inside in in_hole_map.items() if inside],
@@ -128,15 +129,15 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
 
     opt = z3.Optimize()
 
-    x_bits = bits_for(i.x for i in p.hole)
-    y_bits = bits_for(i.y for i in p.hole)
+    x_bits = bits_for(i.x for i in problem.hole)
+    y_bits = bits_for(i.y for i in problem.hole)
 
     # x_sort = z3.BitVecSort(bits_for(max(i.x, i.y) for i in p.hole) * 2)
     x_sort = z3.BitVecSort(x_bits)
     y_sort = z3.BitVecSort(y_bits)
 
     # translate vertices to z3
-    vertices = p.figure.vertices
+    vertices = problem.figure.vertices
     xs = [
         z3.BitVec(f"x_{point.x}_idx{idx}", x_sort) for idx, point in enumerate(vertices)
     ]
@@ -154,16 +155,18 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
 
     # calculate edge distances
     distance_limits = [
-        min_max_edge_length(p.epsilon, p.figure.vertices[p1], p.figure.vertices[p2])
-        for p1, p2 in p.figure.edges
+        min_max_edge_length(
+            problem.epsilon, problem.figure.vertices[p1], problem.figure.vertices[p2]
+        )
+        for p1, p2 in problem.figure.edges
     ]
     exact_distances = [
-        distance(p.figure.vertices[p1], p.figure.vertices[p2])
-        for p1, p2 in p.figure.edges
+        distance(problem.figure.vertices[p1], problem.figure.vertices[p2])
+        for p1, p2 in problem.figure.edges
     ]
     distance_vars = [
         distance(Point(xs[p1], ys[p1]), Point(xs[p2], ys[p2]))
-        for p1, p2 in p.figure.edges
+        for p1, p2 in problem.figure.edges
     ]
     # for limit, distance_var in list(zip(distance_limits, distance_vars))[5:7]:
     for limit, distance_var, exact_distance in zip(
@@ -205,7 +208,7 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
         )
 
     min_hole_dist_points = []
-    for idx, h in enumerate(p.hole):
+    for idx, h in enumerate(problem.hole):
         p_x = z3.BitVec(f"hole_idx{idx}_dist_x", x_sort)
         p_y = z3.BitVec(f"hole_idx{idx}_dist_y", y_sort)
 
@@ -225,7 +228,7 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
 
     min_dislike_sum = sum(
         distance(Point(vertex_x(v), vertex_y(v)), h)
-        for v, h in zip(min_hole_dist_points, p.hole)
+        for v, h in zip(min_hole_dist_points, problem.hole)
     )
 
     total_dislikes = z3.BitVec(
@@ -263,14 +266,19 @@ def internal_run(problem_number: int, minimize: bool = False) -> Solution:
     solution: Solution = Solution(vertices=pose)
     print("Solution:")
     print(to_json(solution))
+
+    if debug:
+        print(to_json(problem))
+
     return solution
 
 
 @click.command()
 @click.argument("problem_number")
 @click.option("--minimize/--no-minimize", default=False)
-def run(problem_number: int, minimize: bool) -> Solution:
-    return internal_run(problem_number)
+@click.option("--debug/--no-debug", default=False)
+def run(problem_number: int, minimize: bool, debug: bool) -> Solution:
+    return _run(problem_number, minimize, debug)
 
 
 if __name__ == "__main__":
