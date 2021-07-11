@@ -1,4 +1,5 @@
 import os
+from typing import Iterator
 
 import click
 import requests
@@ -17,7 +18,7 @@ def get_api_token() -> str:
     return str(token)
 
 
-def submit(problem_id: int) -> Identifier:
+def submit(problem_id: int) -> Iterator[Identifier]:
     for output in _run(problem_id, minimize=True):
         solution = output.solution
 
@@ -36,10 +37,11 @@ def submit(problem_id: int) -> Identifier:
 
         response = parse_obj_as(Identifier, res.json())
         print(f"Successfully submitted ({response.id})!")
-        return response
+        yield response
 
 
 @click.command()
 @click.argument("problem_id")
 def submit_problem(problem_id: int) -> Identifier:
-    return submit(problem_id)
+    for pose in submit(problem_id):
+        print(pose)

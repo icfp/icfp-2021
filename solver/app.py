@@ -3,7 +3,7 @@ import math
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Iterator, Iterable, List, Dict
+from typing import Dict, Iterable, Iterator, List
 
 import click
 import z3
@@ -170,7 +170,9 @@ def edges_in_hole(lookup: InHoleLookup, hole: Hole) -> Dict[Point, List[Point]]:
     return lookup
 
 
-def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Iterator[Output]:
+def _run(
+    problem_number: int, minimize: bool = False, debug: bool = False
+) -> Iterator[Output]:
     problem = load_problem(problem_number)
 
     stats = compute_statistics(problem)
@@ -322,7 +324,8 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> It
 
         # dislikes are the sum of squared distances
         # total_dislikes = sum(i * i for i in min_dist)
-        total_dislikes = sum(z3.SignExt(len(min_dist), i) for i in min_dist)
+        total_dislikes = sum(z3.SignExt(len(min_dist) - 1, i) for i in min_dist)
+        opt.add(total_dislikes >= 0)
 
         # opt.add(total_dislikes < 10000)
         # opt.add(total_dislikes < 3000)
@@ -416,12 +419,17 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> It
             except AttributeError:
                 pass
 
-        print(model)
+        try:
+            pose: Pose = [
+                Point(
+                    model.eval(vertex_x(v)).as_long(), model.eval(vertex_y(v)).as_long()
+                )
+                for v in vertices
+            ]
+        except AttributeError:
+            continue
 
-        pose: Pose = [
-            Point(model.eval(vertex_x(v)).as_long(), model.eval(vertex_y(v)).as_long())
-            for v in vertices
-        ]
+        print(model)
 
         solution: Solution = Solution(vertices=pose)
         output = Output(problem=problem, solution=solution, map_points=map_points)
@@ -434,7 +442,11 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> It
         # res = opt.check(total_dislikes < z3.BitVecVal(int(opt.lower(min_handle)), total_dislikes.sort()))
         total_dislikes = debug_vars["total_dislikes"]
         min_handle = debug_vars["min_handle"]
-        res = opt.check(total_dislikes < z3.Int2BV(opt.upper(min_handle), total_dislikes.sort().size()))
+        res = opt.add(
+            total_dislikes
+            < z3.Int2BV(opt.upper(min_handle), total_dislikes.sort().size())
+        )
+        res = opt.check()
 
 
 @click.command()

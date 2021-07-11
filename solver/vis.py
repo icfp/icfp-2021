@@ -16,7 +16,7 @@ async def get_problem(number):
 
 @app.get("/api/solve/{number}")
 async def solve_problem(number):
-    return _run(number)
+    return _run(number, minimize=True)
 
 
 app.mount(
