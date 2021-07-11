@@ -18,23 +18,25 @@ def get_api_token() -> str:
 
 
 def submit(problem_id: int) -> Identifier:
-    solution = _run(problem_id, minimize=True).solution
-    print(f"Submitting solution {solution.vertices} for problem {problem_id}")
+    for output in _run(problem_id, minimize=True):
+        solution = output.solution
 
-    res = requests.post(
-        f"https://poses.live/api/problems/{problem_id}/solutions",
-        data=to_json(solution),
-        headers={
-            "Authorization": f"Bearer {get_api_token()}",
-            "Content-Type": "application/json",
-        },
-    )
+        print(f"Submitting solution {solution.vertices} for problem {problem_id}")
 
-    res.raise_for_status()
+        res = requests.post(
+            f"https://poses.live/api/problems/{problem_id}/solutions",
+            data=to_json(solution),
+            headers={
+                "Authorization": f"Bearer {get_api_token()}",
+                "Content-Type": "application/json",
+            },
+        )
 
-    response = parse_obj_as(Identifier, res.json())
-    print(f"Successfully submitted ({response.id})!")
-    return response
+        res.raise_for_status()
+
+        response = parse_obj_as(Identifier, res.json())
+        print(f"Successfully submitted ({response.id})!")
+        return response
 
 
 @click.command()

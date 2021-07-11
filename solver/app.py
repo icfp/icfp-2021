@@ -3,7 +3,7 @@ import math
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Iterable, List
+from typing import Iterator, Iterable, List, Dict
 
 import click
 import z3
@@ -170,7 +170,7 @@ def edges_in_hole(lookup: InHoleLookup, hole: Hole) -> Dict[Point, List[Point]]:
     return lookup
 
 
-def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Output:
+def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Iterator[Output]:
     problem = load_problem(problem_number)
 
     stats = compute_statistics(problem)
@@ -186,6 +186,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
     print(f"Map Matrix Size {len(in_hole_map)}")
 
     opt = z3.Optimize()
+    opt.set("opt.timeout", 5 * 60 * 1000)
 
     x_bits = bits_for(i.x for i in problem.hole)
     y_bits = bits_for(i.y for i in problem.hole)
@@ -328,10 +329,13 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
         # opt.add(total_dislikes < 6000)
 
         if minimize:
-            opt.minimize(total_dislikes)
+            min_handle = opt.minimize(total_dislikes)
+        else:
+            min_handle = None
 
         return {
             "total_dislikes": total_dislikes,
+            "min_handle": min_handle,
         }
 
     @constraint
@@ -395,31 +399,42 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
         if res == z3.unsat:
             break
 
-    if res != z3.sat:
+    while res != z3.unsat:
         print(
             to_json(
                 Output(problem=problem, solution=Solution([]), map_points=map_points)
             )
         )
-        raise Exception("Failed to solve!")
 
-    model = opt.model()
-    for k, v in debug_vars.items():
-        print(f"{k}: {model.eval(v)}")
+        if debug_vars.get("min_handle", None):
+            print(f"lower_bounds: {opt.upper(debug_vars['min_handle'])}")
 
-    print(model)
+        model = opt.model()
+        for k, v in debug_vars.items():
+            try:
+                print(f"{k}: {model.eval(v)}")
+            except AttributeError:
+                pass
 
-    pose: Pose = [
-        Point(model.eval(vertex_x(v)).as_long(), model.eval(vertex_y(v)).as_long())
-        for v in vertices
-    ]
+        print(model)
 
-    solution: Solution = Solution(vertices=pose)
-    output = Output(problem=problem, solution=solution, map_points=map_points)
-    print("Solution:")
+        pose: Pose = [
+            Point(model.eval(vertex_x(v)).as_long(), model.eval(vertex_y(v)).as_long())
+            for v in vertices
+        ]
 
-    print(to_json(output))
-    return output
+        solution: Solution = Solution(vertices=pose)
+        output = Output(problem=problem, solution=solution, map_points=map_points)
+        print("Solution:")
+
+        print(to_json(output))
+
+        yield output
+
+        # res = opt.check(total_dislikes < z3.BitVecVal(int(opt.lower(min_handle)), total_dislikes.sort()))
+        total_dislikes = debug_vars["total_dislikes"]
+        min_handle = debug_vars["min_handle"]
+        res = opt.check(total_dislikes < z3.Int2BV(opt.upper(min_handle), total_dislikes.sort().size()))
 
 
 @click.command()
@@ -432,7 +447,8 @@ def run(problem_number: int, minimize: bool, debug: bool) -> Output:
     set_option("parallel.enable", True)
     set_option("parallel.threads.max", 32)
 
-    return _run(problem_number, minimize, debug)
+    *_, last = _run(problem_number, minimize, debug)
+    return last
 
 
 if __name__ == "__main__":
