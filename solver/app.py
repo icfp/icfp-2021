@@ -95,6 +95,30 @@ class ProblemStatistics:
     max_y: int
 
 
+ConstraintFunc = Callable[[], DebugVars]
+
+
+class Constraint:
+    def __init__(self, func: ConstraintFunc, name: str = None):
+        self.func = func
+        self._name = name if name is not None else func.__name__
+
+    def __call__(self, *args, **kwargs) -> DebugVars:
+        return self.func()
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def disable(self) -> "Constraint":
+        return Constraint(lambda: {}, name=f"{self.name} (disabled)")
+
+
+def constraint(f: ConstraintFunc) -> Constraint:
+    return Constraint(f)
+
+
 def compute_statistics(problem: Problem) -> ProblemStatistics:
     hole = problem.hole
     min_x = min(p.x for p in hole)
@@ -168,6 +192,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
     vertex, mk_vertex, (vertex_x, vertex_y) = z3.TupleSort("vertex", (x_sort, y_sort))
     vertices = [mk_vertex(x, y) for x, y in zip(xs, ys)]
 
+    @constraint
     def constrain_to_xy_in_hole() -> DebugVars:
         ranges = list(make_ranges(in_hole_map, stats))
 
@@ -187,12 +212,14 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
         return {}
 
     # add a distinct constraint on the vertex points
+    @constraint
     def constrain_unique_positions() -> DebugVars:
         opt.add(z3.Distinct(*vertices))
 
         return {}
 
     # calculate edge distances
+    @constraint
     def constrain_distances(distance_func: DistanceFunc = distance) -> DebugVars:
         distance_limits = [
             min_max_edge_length(
@@ -233,6 +260,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
 
         return {}
 
+    @constraint
     def minimize_dislikes() -> DebugVars:
         min_dist = []
         for hole_idx, hole_vertex in enumerate(problem.hole):
@@ -258,6 +286,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
             "total_dislikes": total_dislikes,
         }
 
+    @constraint
     def virtual_points():
         min_hole_dist_points = []
         for idx, h in enumerate(problem.hole):
@@ -286,17 +315,17 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
 
         return {}
 
-    constraints: List[Callable[[], DebugVars]] = [
+    constraints: List[Constraint] = [
         constrain_to_xy_in_hole,
         constrain_unique_positions,
-        # minimize_dislikes,
+        minimize_dislikes.disable,
         virtual_points,
-        # constrain_distances,
+        constrain_distances.disable,
     ]
 
     debug_vars = {}
     for c in constraints:
-        print(f"Adding constraint: {c.__name__}")
+        print(f"Adding constraint: {c.name}")
 
         t0 = time.perf_counter()
 
