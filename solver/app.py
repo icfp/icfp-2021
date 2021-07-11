@@ -3,7 +3,7 @@ import math
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Callable, Dict, Iterable, List, NamedTuple
+from typing import Callable, Iterable, List
 
 import click
 import z3
@@ -11,7 +11,20 @@ from pydantic.dataclasses import dataclass
 
 from . import polygon
 from .format import to_json
-from .types import EdgeLengthRange, Figure, Hole, Output, Point, Pose, Problem, Solution
+from .types import (
+    DebugVars,
+    EdgeLengthRange,
+    Figure,
+    Hole,
+    InclusiveRange,
+    InHoleLookup,
+    Output,
+    Point,
+    Pose,
+    Problem,
+    Solution,
+    YPointRange,
+)
 
 ROOT_DIR = Path(__file__).parent.parent
 PROBLEMS_DIR = ROOT_DIR / "problems"
@@ -93,9 +106,6 @@ def compute_statistics(problem: Problem) -> ProblemStatistics:
     return ProblemStatistics(min_x=min_x, min_y=min_y, max_x=max_x, max_y=max_y)
 
 
-InHoleLookup = Dict[Point, bool]
-
-
 def make_in_hole_matrix(stats: ProblemStatistics, problem) -> InHoleLookup:
     lookup = defaultdict(lambda: False)
     for x in range(stats.max_x + 1):
@@ -104,16 +114,6 @@ def make_in_hole_matrix(stats: ProblemStatistics, problem) -> InHoleLookup:
             lookup[point] = polygon.in_polygon(point, problem.hole)
 
     return lookup
-
-
-class InclusiveRange(NamedTuple):
-    start: int
-    end: int
-
-
-class YPointRange(NamedTuple):
-    x: int
-    y_inclusive_ranges: List[InclusiveRange]
 
 
 def make_ranges(
@@ -168,7 +168,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
     vertex, mk_vertex, (vertex_x, vertex_y) = z3.TupleSort("vertex", (x_sort, y_sort))
     vertices = [mk_vertex(x, y) for x, y in zip(xs, ys)]
 
-    def constrain_to_xy_in_hole():
+    def constrain_to_xy_in_hole() -> DebugVars:
         ranges = list(make_ranges(in_hole_map, stats))
 
         for x_var, y_var in point_vars:
@@ -189,12 +189,16 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
                 )
             )
 
+        return {}
+
     # add a distinct constraint on the vertex points
-    def constrain_unique_positions():
+    def constrain_unique_positions() -> DebugVars:
         opt.add(z3.Distinct(*vertices))
 
+        return {}
+
     # calculate edge distances
-    def constrain_distances(distance_func: DistanceFunc = distance):
+    def constrain_distances(distance_func: DistanceFunc = distance) -> DebugVars:
         distance_limits = [
             min_max_edge_length(
                 problem.epsilon,
@@ -221,7 +225,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
             # assert limit.min <= exact_distance <= limit.max
 
             # Exact distances
-            # opt.add(distance_value == exact_distance)
+            # opt.add_soft(distance_value == exact_distance)
 
             # Min/max
             opt.add(distance_value >= limit.min)
@@ -231,7 +235,9 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
             # opt.add(a <= i+1)
             # opt.assert_and_track(i == a, f"foo{i}")
 
-    def minimize_dislikes():
+        return {}
+
+    def minimize_dislikes() -> DebugVars:
         min_dist = []
         for hole_idx, hole_vertex in enumerate(problem.hole):
             dist = []
@@ -243,26 +249,33 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
                 b0 = z3.If(b < b0, b, b0)
             min_dist.append(b0)
 
-        total_dislikes = sum(min_dist)
+        # dislikes are the sum of squared distances
+        total_dislikes = sum(i * i for i in min_dist)
 
         opt.add(total_dislikes < 3000)
+        # opt.add(total_dislikes < 6000)
 
         if minimize:
             opt.minimize(total_dislikes)
 
-    constraints = [
+        return {
+            "total_dislikes": total_dislikes,
+        }
+
+    constraints: List[Callable[[], DebugVars]] = [
         constrain_to_xy_in_hole,
         constrain_unique_positions,
         minimize_dislikes,
         constrain_distances,
     ]
 
+    debug_vars = {}
     for c in constraints:
         print(f"Adding constraint: {c.__name__}")
 
         t0 = time.perf_counter()
 
-        c()
+        debug_vars.update(**c())
         res = opt.check()
 
         t1 = time.perf_counter()
@@ -287,6 +300,8 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
         raise Exception("Failed to solve!")
 
     model = opt.model()
+    for k, v in debug_vars.items():
+        print(f"{k}: {model.eval(v)}")
 
     pose: Pose = [
         Point(model.eval(vertex_x(v)).as_long(), model.eval(vertex_y(v)).as_long())

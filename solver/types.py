@@ -1,5 +1,6 @@
-from typing import Any, List, NamedTuple
+from typing import Any, Dict, List, NamedTuple
 
+import z3
 from pydantic.dataclasses import dataclass
 
 
@@ -11,11 +12,23 @@ class Point(NamedTuple):
 Hole = List[Point]
 Pose = List[Point]
 VertexIndex = int
+DebugVars = Dict[str, z3.AstRef]
+InHoleLookup = Dict[Point, bool]
 
 
 class Edge(NamedTuple):
     source: VertexIndex
     target: VertexIndex
+
+
+class InclusiveRange(NamedTuple):
+    start: int
+    end: int
+
+
+class YPointRange(NamedTuple):
+    x: int
+    y_inclusive_ranges: List[InclusiveRange]
 
 
 @dataclass(frozen=True)
