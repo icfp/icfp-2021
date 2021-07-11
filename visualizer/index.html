@@ -4,6 +4,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.0.0/d3.min.js"></script>
   <script type="application/javascript">
     const sample = {
+      problem: {
       hole: [
         [55, 80],
         [65, 95],
@@ -72,7 +73,7 @@
         ]
       },
       epsilon: 150000
-    };
+    }};
 
     function render() {
       console.log("Rendering");
@@ -80,17 +81,18 @@
 
       let json = JSON.parse(input || JSON.stringify(sample));
 
-      let mapPoints = json.mapPoints || []
-      let figure = json.figure || {}
+      let mapPoints = json.map_points || []
+      let problem = json.problem;
+      let figure = problem.figure || {}
 
       let solution = Object.create(figure)
-      solution.vertices = (json.solution || {}).vertices || []
+      solution.vertices = (json.solution || { "vertices": []}).vertices || []
 
 
       // reset and scale canvas
       // space.width = space.width;
-      const maxX = _.maxBy(json.hole, v => v[0])[0] + 10;
-      const maxY = _.maxBy(json.hole, v => v[1])[1] + 10;
+      const maxX = _.maxBy(problem.hole, v => v[0])[0] + 10;
+      const maxY = _.maxBy(problem.hole, v => v[1])[1] + 10;
 
       console.log('Max X', maxX, 'Max Y', maxY);
       console.log('Scale', 800 / maxX, 400 / maxY)
@@ -98,7 +100,7 @@
       // ctx.scale(800 / maxX, 400 / maxY);
 
       // drawHole(jso rn.hole);
-      // drawFigure(json.figure, 'red');
+      // drawFigure(json.problem.figure, 'red');
       // console.log('Done');
 
       function makeD3Path(points) {
@@ -126,7 +128,7 @@
 
       svg
         .append('path')
-        .attr('d', makeD3Path(json.hole).toString())
+        .attr('d', makeD3Path(problem.hole).toString())
         .attr('stroke', 'steelblue')
         .attr('fill', 'white')
         .attr('stroke-width', '1.5');
@@ -137,7 +139,7 @@
 
       svg
         .selectAll('circle.hole')
-        .data(json.hole)
+        .data(problem.hole)
         .enter().append("circle")
         .attr('class', 'hole')
         .attr("r", 1)
@@ -198,7 +200,7 @@
       }
 
       if (document.getElementById("figureCheckbox").checked) {
-        const figurePath = makeD3FigurePath(json.figure);
+        const figurePath = makeD3FigurePath(problem.figure);
 
         svg
           .append('path')
@@ -297,16 +299,16 @@
       }
 
       // https://observablehq.com/@d3/voronoi-labels
-      const delaunay = d3.Delaunay.from(json.hole);
+      const delaunay = d3.Delaunay.from(problem.hole);
       const voronoi = delaunay.voronoi([-1, -1, maxX + 1, maxY + 1]);
 
-      const cells = json.hole.map((d, i) => [d, voronoi.cellPolygon(i)]);
+      const cells = problem.hole.map((d, i) => [d, voronoi.cellPolygon(i)]);
 
 
       if (mapPoints.length > 0) {
         document.getElementById("pointsLabel").hidden = false;
       }
-      if (mapPoints.length > 0) {
+      if (solution.vertices.length > 0) {
         document.getElementById("solutionLabel").hidden = false;
       }
 

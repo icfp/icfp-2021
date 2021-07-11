@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 from typing import Iterable, List, Dict, NamedTuple, Callable
 
@@ -12,7 +11,7 @@ from pydantic.dataclasses import dataclass
 
 from . import polygon
 from .format import to_json
-from .types import Point, Pose, Problem, Figure, Hole, EdgeLengthRange, Solution
+from .types import Point, Pose, Problem, Figure, Hole, EdgeLengthRange, Solution, Output
 from collections import defaultdict
 
 ROOT_DIR = Path(__file__).parent.parent
@@ -143,10 +142,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
 
     in_hole_map = make_in_hole_matrix(stats, problem)
 
-    json.dump(
-        [[point.x, point.y] for point, inside in in_hole_map.items() if inside],
-        open("map.json", "w"),
-    )
+    map_points = [[point.x, point.y] for point, inside in in_hole_map.items() if inside]
 
     print(f"Map Matrix Size {len(in_hole_map)}")
 
@@ -307,6 +303,16 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
 
         assert res == z3.sat, "Failed to solve"
 
+    res = opt.check()
+
+    if res != z3.sat:
+        print(
+            to_json(
+                Output(problem=problem, solution=Solution([]), map_points=map_points)
+            )
+        )
+        raise Exception("Failed to solve!")
+
     # if str(res) != "sat":
     #     core = opt.unsat_core()
     #     print(core["foo20"])
@@ -321,11 +327,14 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
 
     solution: Solution = Solution(vertices=pose)
     print("Solution:")
-    print(to_json(solution))
 
     if debug:
-        print(to_json(problem))
+        print(
+            to_json(Output(problem=problem, solution=solution, map_points=map_points))
+        )
+        return solution
 
+    print(to_json(solution))
     return solution
 
 

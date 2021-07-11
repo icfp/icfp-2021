@@ -1,4 +1,4 @@
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Any
 from pydantic.dataclasses import dataclass
 
 
@@ -44,3 +44,10 @@ class Solution:
 @dataclass(frozen=True)
 class Identifier:
     id: str
+
+
+@dataclass(frozen=True)
+class Output:
+    problem: Any
+    solution: Solution
+    map_points: List[List[int]]
