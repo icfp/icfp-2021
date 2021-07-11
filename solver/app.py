@@ -154,10 +154,10 @@ def make_ranges(
             yield YPointRange(x=x, y_inclusive_ranges=y_ranges)
 
 
-def edges_in_hole(lookup: InHoleLookup, hole: Hole) -> Dict[Point, List[Point]]:
+def edges_in_hole(lookup: InHoleLookup, hole: Hole) -> Dict[Point, set[Point]]:
     inside_points = [point for point, inside in lookup.items() if inside]
     hole_edges = list(zip(hole, hole[1:] + [hole[0]]))
-    lookup = defaultdict(list)
+    lookup = defaultdict(set)
     for p1 in inside_points:
 
         for p2 in inside_points:
@@ -165,8 +165,8 @@ def edges_in_hole(lookup: InHoleLookup, hole: Hole) -> Dict[Point, List[Point]]:
                 continue
 
             if not any(polygon.do_intersect(p1, p2, e1, e2) for e1, e2 in hole_edges):
-                lookup[p1].append(p2)
-                lookup[p2].append(p1)
+                lookup[p1].add(p2)
+                lookup[p2].add(p1)
 
     return lookup
 
@@ -393,6 +393,9 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
         t0 = time.perf_counter()
 
         debug_vars.update(**c())
+
+        print("constraint added... checking...")
+
         res = opt.check()
 
         t1 = time.perf_counter()
