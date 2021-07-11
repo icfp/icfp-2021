@@ -171,8 +171,8 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
     y_bits = bits_for(i.y for i in problem.hole)
 
     # x_sort = z3.BitVecSort(bits_for(max(i.x, i.y) for i in p.hole) * 2)
-    x_sort = z3.BitVecSort(x_bits)
-    y_sort = z3.BitVecSort(y_bits)
+    x_sort = z3.BitVecSort(x_bits + 1)
+    y_sort = z3.BitVecSort(y_bits + 1)
 
     # translate vertices to z3
     vertices = problem.figure.vertices
@@ -187,6 +187,18 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     vertex, mk_vertex, (vertex_x, vertex_y) = z3.TupleSort("vertex", (x_sort, y_sort))
     vertices = [mk_vertex(x, y) for x, y in zip(xs, ys)]
+
+    figure_points = [Point(x, y) for x, y in zip(xs, ys)]
+    hole_points = [
+        Point(z3.BitVecVal(p.x, x_sort), z3.BitVecVal(p.y, y_sort))
+        for p in problem.hole
+    ]
+
+    # hole = [mk_vertex(p.x, p.y) for p in problem.hole]
+
+    edges = problem.figure.edges
+    epsilon = problem.epsilon
+    original_figure_points = problem.figure.vertices
 
     @constraint
     def constrain_to_xy_in_hole() -> DebugVars:
@@ -219,36 +231,29 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
     def constrain_distances(distance_func: DistanceFunc = distance) -> DebugVars:
         distance_limits = [
             min_max_edge_length(
-                problem.epsilon,
-                problem.figure.vertices[p1],
-                problem.figure.vertices[p2],
+                epsilon,
+                original_figure_points[p1],
+                original_figure_points[p2],
                 distance_func=distance_func,
             )
-            for p1, p2 in problem.figure.edges
-        ]
-        exact_distances = [
-            distance_func(problem.figure.vertices[p1], problem.figure.vertices[p2])
-            for p1, p2 in problem.figure.edges
+            for p1, p2 in edges
         ]
         distance_values = [
-            distance_func(Point(xs[p1], ys[p1]), Point(xs[p2], ys[p2]))
-            for p1, p2 in problem.figure.edges
+            distance_func(figure_points[p1], figure_points[p2]) for p1, p2 in edges
         ]
         # for limit, distance_var in list(zip(distance_limits, distance_vars))[5:7]:
-        for limit, distance_value, exact_distance in zip(
-            distance_limits, distance_values, exact_distances
-        ):
+        for limit, distance_value in zip(distance_limits, distance_values):
             # print(limit, distance_var)
 
             # assert limit.min <= exact_distance <= limit.max
 
             # Exact distances
-            opt.add_soft(distance_value == exact_distance)
+            # opt.add_soft(distance_value == exact_distance)
             # opt.add(distance_value == exact_distance)
 
             # Min/max
-            # opt.add(distance_value >= limit.min)
-            # opt.add(distance_value <= limit.max)
+            opt.add(distance_value >= limit.min)
+            opt.add(distance_value <= limit.max)
 
             # opt.add(i-1 <= a)
             # opt.add(a <= i+1)
@@ -259,10 +264,10 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
     @constraint
     def minimize_dislikes() -> DebugVars:
         min_dist = []
-        for hole_idx, hole_vertex in enumerate(problem.hole):
+        for hole_idx, hole_point in enumerate(hole_points):
             dist = []
-            for figured_idx, figure_point in enumerate(problem.figure.vertices):
-                dist.append(distance(hole_vertex, figure_point))
+            for figured_idx, figure_point in enumerate(figure_points):
+                dist.append(distance(hole_point, figure_point))
 
             b0 = dist[0]
             for b in dist[1:]:
@@ -270,9 +275,11 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
             min_dist.append(b0)
 
         # dislikes are the sum of squared distances
-        total_dislikes = sum(i * i for i in min_dist)
+        # total_dislikes = sum(i * i for i in min_dist)
+        total_dislikes = sum(z3.SignExt(len(min_dist), i) for i in min_dist)
 
         # opt.add(total_dislikes < 10000)
+        # opt.add(total_dislikes < 3000)
         # opt.add(total_dislikes < 6000)
 
         if minimize:
@@ -313,10 +320,10 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     constraints: List[Constraint] = [
         constrain_to_xy_in_hole,
-        constrain_unique_positions,
-        minimize_dislikes.disable,
-        virtual_points,
-        constrain_distances.disable,
+        constrain_unique_positions.disable,
+        minimize_dislikes,
+        virtual_points.disable,
+        constrain_distances,
     ]
 
     debug_vars = {}
@@ -354,6 +361,8 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
     for k, v in debug_vars.items():
         print(f"{k}: {model.eval(v)}")
 
+    print(model)
+
     pose: Pose = [
         Point(model.eval(vertex_x(v)).as_long(), model.eval(vertex_y(v)).as_long())
         for v in vertices
@@ -372,6 +381,11 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 @click.option("--minimize/--no-minimize", default=False)
 @click.option("--debug/--no-debug", default=False)
 def run(problem_number: int, minimize: bool, debug: bool) -> Output:
+    from z3 import set_option
+
+    set_option("parallel.enable", True)
+    set_option("parallel.threads.max", 32)
+
     return _run(problem_number, minimize, debug)
 
 
