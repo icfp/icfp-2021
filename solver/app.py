@@ -154,6 +154,19 @@ def make_ranges(
             yield YPointRange(x=x, y_inclusive_ranges=y_ranges)
 
 
+def edges_in_hole(lookup: InHoleLookup, hole: Hole) -> Iterable[tuple[Point, Point]]:
+    inside_points = [point for point, inside in lookup.items() if inside]
+    hole_edges = list(zip(hole, hole[1:] + [hole[0]]))
+    for p1 in inside_points:
+        for p2 in inside_points:
+            if p1.x == p2.x and p1.y == p2.y:
+                continue
+
+            for e1, e2 in hole_edges:
+                if not polygon.do_intersect(p1, p2, e1, e2):
+                    yield p1, p2
+
+
 def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Output:
     problem = load_problem(problem_number)
 
@@ -162,6 +175,10 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
     in_hole_map = make_in_hole_matrix(stats, problem)
 
     map_points = [[point.x, point.y] for point, inside in in_hole_map.items() if inside]
+
+    allowed_edges = list(edges_in_hole(in_hole_map, problem.hole))
+
+    print(allowed_edges)
 
     print(f"Map Matrix Size {len(in_hole_map)}")
 
