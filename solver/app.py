@@ -234,19 +234,19 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
 
     def minimize_dislikes():
         min_dist = []
-        for i, h in enumerate(problem.hole):
+        for hole_idx, hole_vertex in enumerate(problem.hole):
             dist = []
-            for j, p in enumerate(problem.figure.vertices):
-                dist.append(z3_mh_distance(h, p))
+            for figured_idx, figure_point in enumerate(problem.figure.vertices):
+                dist.append(distance(hole_vertex, figure_point))
 
             b0 = dist[0]
             for b in dist[1:]:
-                b0 = z3.If(b < 0, b, b0)
+                b0 = z3.If(b < b0, b, b0)
             min_dist.append(b0)
 
         total_dislikes = sum(min_dist)
 
-        opt.add(total_dislikes < 6000)
+        opt.add(total_dislikes < 3000)
 
         if minimize:
             opt.minimize(total_dislikes)
@@ -254,8 +254,8 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
     constraints = [
         constrain_to_xy_in_hole,
         constrain_unique_positions,
-        constrain_distances,
         minimize_dislikes,
+        constrain_distances,
     ]
 
     for c in constraints:
@@ -286,11 +286,6 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
             )
         )
         raise Exception("Failed to solve!")
-
-    # if str(res) != "sat":
-    #     core = opt.unsat_core()
-    #     print(core["foo20"])
-    #     print(core)
 
     model = opt.model()
 
