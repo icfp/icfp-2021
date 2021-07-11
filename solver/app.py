@@ -172,22 +172,17 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
         ranges = list(make_ranges(in_hole_map, stats))
 
         for x_var, y_var in point_vars:
-            opt.add(
-                z3.Or(
-                    *[
-                        z3.And(
-                            x_var == x,
-                            z3.Or(
-                                *[
-                                    z3.And(r.start <= y_var, y_var <= r.end)
-                                    for r in y_ranges
-                                ]
-                            ),
-                        )
-                        for x, y_ranges in ranges
-                    ]
+            point_constraints = [
+                z3.And(
+                    x_var == x,
+                    z3.Or(
+                        *[z3.And(r.start <= y_var, y_var <= r.end) for r in y_ranges]
+                    ),
                 )
-            )
+                for x, y_ranges in ranges
+            ]
+
+            opt.add(z3.Or(*point_constraints))
 
         return {}
 
@@ -225,11 +220,12 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
             # assert limit.min <= exact_distance <= limit.max
 
             # Exact distances
-            # opt.add_soft(distance_value == exact_distance)
+            opt.add_soft(distance_value == exact_distance)
+            # opt.add(distance_value == exact_distance)
 
             # Min/max
-            opt.add(distance_value >= limit.min)
-            opt.add(distance_value <= limit.max)
+            # opt.add(distance_value >= limit.min)
+            # opt.add(distance_value <= limit.max)
 
             # opt.add(i-1 <= a)
             # opt.add(a <= i+1)
@@ -252,7 +248,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
         # dislikes are the sum of squared distances
         total_dislikes = sum(i * i for i in min_dist)
 
-        opt.add(total_dislikes < 3000)
+        # opt.add(total_dislikes < 10000)
         # opt.add(total_dislikes < 6000)
 
         if minimize:
@@ -262,11 +258,40 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
             "total_dislikes": total_dislikes,
         }
 
+    def virtual_points():
+        min_hole_dist_points = []
+        for idx, h in enumerate(problem.hole):
+            p_x = z3.BitVec(f"hole_idx{idx}_dist_x", x_sort)
+            p_y = z3.BitVec(f"hole_idx{idx}_dist_y", y_sort)
+
+            vertex = mk_vertex(p_x, p_y)
+            min_hole_dist_points.append(vertex)
+
+            opt.add(z3.Or(*[vertex == figure_point for figure_point in vertices]))
+
+            opt.minimize(distance(Point(p_x, p_y), h))
+
+        opt.add(z3.Distinct(*min_hole_dist_points))
+
+        # min_dislike_sum = sum(
+        #     distance(Point(vertex_x(v), vertex_y(v)), h)
+        #     for v, h in zip(min_hole_dist_points, problem.hole)
+        # )
+
+        # total_dislikes = z3.BitVec("dislikes", min_dislike_sum.size())
+
+        # opt.add(total_dislikes == min_dislike_sum)
+        # opt.add(total_dislikes < 6000)
+        # opt.minimize(total_dislikes)
+
+        return {}
+
     constraints: List[Callable[[], DebugVars]] = [
         constrain_to_xy_in_hole,
         constrain_unique_positions,
-        minimize_dislikes,
-        constrain_distances,
+        # minimize_dislikes,
+        virtual_points,
+        # constrain_distances,
     ]
 
     debug_vars = {}
@@ -289,7 +314,8 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
         #     print(core["foo20"])
         #     print(core)
 
-        assert res == z3.sat, "Failed to solve"
+        if res == z3.unsat:
+            break
 
     if res != z3.sat:
         print(
