@@ -159,13 +159,14 @@ def edges_in_hole(lookup: InHoleLookup, hole: Hole) -> Dict[Point, List[Point]]:
     hole_edges = list(zip(hole, hole[1:] + [hole[0]]))
     lookup = defaultdict(list)
     for p1 in inside_points:
+
         for p2 in inside_points:
             if p1.x == p2.x and p1.y == p2.y:
                 continue
 
-            for e1, e2 in hole_edges:
-                if not polygon.do_intersect(p1, p2, e1, e2):
-                    lookup[p1].append(p2)
+            if not any(polygon.do_intersect(p1, p2, e1, e2) for e1, e2 in hole_edges):
+                lookup[p1].append(p2)
+                lookup[p2].append(p1)
 
     return lookup
 
@@ -179,7 +180,15 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     map_points = [[point.x, point.y] for point, inside in in_hole_map.items() if inside]
 
+    print(f"Building allowed edges for {problem_number}")
+    t0 = time.perf_counter()
     allowed_edges: Dict[Point, List[Point]] = edges_in_hole(in_hole_map, problem.hole)
+
+    t1 = time.perf_counter()
+
+    total = datetime.timedelta(seconds=t1 - t0)
+
+    print("Done!.. elapsed time:", total)
 
     # print(allowed_edges)
 
@@ -225,17 +234,23 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
         ranges = list(make_ranges(in_hole_map, stats))
 
         for x_var, y_var in point_vars:
-            point_constraints = [
-                z3.And(
-                    x_var == x,
-                    z3.Or(
-                        *[z3.And(r.start <= y_var, y_var <= r.end) for r in y_ranges]
-                    ),
+            x_constraints = []
+            for x, y_ranges in ranges:
+                x_match = x_var == x
+                x_constraints.append(x_match)
+                opt.add(
+                    z3.Implies(
+                        x_match,
+                        z3.Or(
+                            *[
+                                z3.And(r.start <= y_var, y_var <= r.end)
+                                for r in y_ranges
+                            ]
+                        ),
+                    )
                 )
-                for x, y_ranges in ranges
-            ]
 
-            opt.add(z3.Or(*point_constraints))
+            opt.add(z3.Or(*x_constraints))
 
         return {}
 
@@ -247,18 +262,17 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
             conditions = []
             for allowed_source, allowed_targets in allowed_edges.items():
-                conditions.append(
-                    z3.And(
-                        v_source == mk_vertex(allowed_source.x, allowed_source.y),
-                        z3.Or(
-                            *[
-                                v_target
-                                == mk_vertex(allowed_target.x, allowed_target.y)
-                                for allowed_target in allowed_targets
-                            ]
-                        ),
-                    )
+                if_sources_match = v_source == mk_vertex(
+                    allowed_source.x, allowed_source.y
                 )
+                conditions.append(if_sources_match)
+
+                target_constraints = [
+                    v_target == mk_vertex(allowed_target.x, allowed_target.y)
+                    for allowed_target in allowed_targets
+                ]
+
+                opt.add(z3.Implies(if_sources_match, z3.Or(*target_constraints)))
 
             opt.add(z3.Or(*conditions))
 
@@ -365,11 +379,11 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     constraints: List[Constraint] = [
         constrain_to_xy_in_hole,
+        constrain_to_edges_in_hole,
         constrain_unique_positions.disable,
-        constrain_to_edges_in_hole.disable,
         minimize_dislikes,
         virtual_points.disable,
-        constrain_distances,
+        constrain_distances.disable,
     ]
 
     debug_vars = {}
