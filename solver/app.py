@@ -3,7 +3,7 @@ import math
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Callable, Iterable, List
+from typing import Iterable, List
 
 import click
 import z3
@@ -12,7 +12,9 @@ from pydantic.dataclasses import dataclass
 from . import polygon
 from .format import to_json
 from .types import (
+    ConstraintFunc,
     DebugVars,
+    DistanceFunc,
     EdgeLengthRange,
     Figure,
     Hole,
@@ -63,9 +65,6 @@ def z3_mh_distance(p1: Point, p2: Point):
     return z3.If(delta_x < 0, -delta_x, delta_x) + z3.If(delta_y < 0, -delta_y, delta_y)
 
 
-DistanceFunc = Callable[[Point, Point], int]
-
-
 def min_max_edge_length(
     epsilon: int, source: Point, target: Point, distance_func: DistanceFunc = distance
 ) -> EdgeLengthRange:
@@ -93,9 +92,6 @@ class ProblemStatistics:
     min_y: int
     max_x: int
     max_y: int
-
-
-ConstraintFunc = Callable[[], DebugVars]
 
 
 class Constraint:
