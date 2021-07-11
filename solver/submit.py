@@ -18,7 +18,7 @@ def get_api_token() -> str:
 
 
 def submit(problem_id: int) -> Identifier:
-    solution = _run(problem_id)
+    solution = _run(problem_id).solution
     print(f"Submitting solution {solution.vertices} for problem {problem_id}")
 
     res = requests.post(

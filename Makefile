@@ -31,4 +31,4 @@ isort:
 pr: pretty isort lint test
 
 vis:
-	open ./visualizer/index.html
+	 poetry run uvicorn solver.vis:app --reload

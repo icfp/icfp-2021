@@ -154,7 +154,7 @@ def make_ranges(
             yield YPointRange(x=x, y_inclusive_ranges=y_ranges)
 
 
-def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Solution:
+def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Output:
     problem = load_problem(problem_number)
 
     stats = compute_statistics(problem)
@@ -360,23 +360,18 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
     ]
 
     solution: Solution = Solution(vertices=pose)
+    output = Output(problem=problem, solution=solution, map_points=map_points)
     print("Solution:")
 
-    if debug:
-        print(
-            to_json(Output(problem=problem, solution=solution, map_points=map_points))
-        )
-        return solution
-
-    print(to_json(solution))
-    return solution
+    print(output)
+    return output
 
 
 @click.command()
 @click.argument("problem_number")
 @click.option("--minimize/--no-minimize", default=False)
 @click.option("--debug/--no-debug", default=False)
-def run(problem_number: int, minimize: bool, debug: bool) -> Solution:
+def run(problem_number: int, minimize: bool, debug: bool) -> Output:
     return _run(problem_number, minimize, debug)
 
 

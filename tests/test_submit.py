@@ -5,7 +5,7 @@ import requests_mock
 from mock import patch
 
 from solver.submit import submit
-from solver.types import Point, Solution
+from solver.types import Output, Point, Solution
 
 
 class TestSubmit(TestCase):
@@ -16,7 +16,10 @@ class TestSubmit(TestCase):
         problem_id = 1
         expected_identifier = "123"
 
-        run_mock.return_value = Solution([Point(1, 2), Point(2, 1)])
+        run_mock.return_value = Output(
+            problem={}, solution=Solution([Point(1, 2), Point(2, 1)]), map_points=[]
+        )
+
         token_mock.return_value = "fake_token"
         requests_mock.register_uri(
             "POST",
@@ -37,7 +40,9 @@ class TestSubmit(TestCase):
             f"https://poses.live/api/problems/{problem_id}/solutions",
             [{"status_code": 500}],
         )
-        run_mock.return_value = Solution([Point(1, 2), Point(2, 1)])
+        run_mock.return_value = Output(
+            problem={}, solution=Solution([Point(1, 2), Point(2, 1)]), map_points=[]
+        )
         token_mock.return_value = "fake_token"
 
         with self.assertRaises(requests.exceptions.HTTPError):
