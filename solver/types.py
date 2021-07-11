@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, NamedTuple
+from typing import Any, Callable, Dict, List, NamedTuple
 
 import z3
 from pydantic.dataclasses import dataclass
@@ -14,6 +14,8 @@ Pose = List[Point]
 VertexIndex = int
 DebugVars = Dict[str, z3.AstRef]
 InHoleLookup = Dict[Point, bool]
+ConstraintFunc = Callable[[], DebugVars]
+DistanceFunc = Callable[[Point, Point], int]
 
 
 class Edge(NamedTuple):
