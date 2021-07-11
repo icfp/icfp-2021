@@ -225,20 +225,54 @@ def _run(
 
     @constraint
     def constrain_to_xy_in_hole() -> DebugVars:
-        ranges = list(make_ranges(in_hole_map, stats))
+        xr = list(make_ranges(in_hole_map, stats))
+        yr = list(
+            make_ranges(
+                {Point(x=k.y, y=k.x): v for k, v in in_hole_map.items()},
+                ProblemStatistics(
+                    max_x=stats.max_y,
+                    max_y=stats.max_x,
+                    min_x=stats.min_y,
+                    min_y=stats.min_x,
+                ),
+            )
+        )
 
         for x_var, y_var in point_vars:
-            point_constraints = [
-                z3.And(
-                    x_var == x,
-                    z3.Or(
-                        *[z3.And(r.start <= y_var, y_var <= r.end) for r in y_ranges]
-                    ),
+            select_x = []
+            select_y = []
+            for x, y_ranges in xr:
+                x = z3.BitVecVal(x, x_var.sort())
+                is_x = x_var == x
+                select_x.append(is_x)
+                opt.add(
+                    z3.Implies(
+                        is_x,
+                        z3.Or(
+                            *[
+                                z3.And(r.start <= y_var, y_var <= r.end)
+                                for r in y_ranges
+                            ]
+                        ),
+                    )
                 )
-                for x, y_ranges in ranges
-            ]
-
-            opt.add(z3.Or(*point_constraints))
+            for y, x_ranges in yr:
+                y = z3.BitVecVal(y, y_var.sort())
+                is_y = y_var == y
+                select_y.append(is_y)
+                opt.add(
+                    z3.Implies(
+                        is_y,
+                        z3.Or(
+                            *[
+                                z3.And(r.start <= x_var, x_var <= r.end)
+                                for r in x_ranges
+                            ]
+                        ),
+                    )
+                )
+            opt.add(z3.Or(*select_x))
+            opt.add(z3.Or(*select_y))
 
         return {}
 
@@ -372,11 +406,11 @@ def _run(
 
     constraints: List[Constraint] = [
         constrain_to_xy_in_hole,
-        constrain_unique_positions.disable,
-        constrain_to_edges_in_hole.disable,
-        minimize_dislikes,
-        virtual_points.disable,
+        # constrain_unique_positions.disable,
+        # constrain_to_edges_in_hole.disable,
+        # virtual_points.disable,
         constrain_distances,
+        minimize_dislikes,
     ]
 
     debug_vars = {}
