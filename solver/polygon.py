@@ -1,5 +1,6 @@
 from .types import Hole, Point
 
+
 # Check if a point is on a line
 def on_line(p: Point, start: Point, end: Point):
     dxc = p.x - start.x
