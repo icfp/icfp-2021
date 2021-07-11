@@ -158,3 +158,49 @@ class TestPolygon(TestCase):
             self.assertTrue(actual, f"Expected {point} to be in or on the hole")
         else:
             self.assertFalse(actual, f"Expected {point} not to be in or on the hole")
+
+    @parameterized.expand(
+        [
+            param(Point(4, 1), False),
+            param(Point(8, 1), False),
+            param(Point(6, 3), True),
+            param(Point(8, 3), False),
+        ]
+    )
+    def test_multiple_horizontal_lines(self, point: Point, expected: bool) -> None:
+        hole: Hole = [
+            Point(1, 1),
+            Point(2, 1),
+            Point(3, 1),
+            Point(3, 3),
+            Point(4, 3),
+            Point(5, 3),
+            Point(5, 1),
+            Point(7, 1),
+            Point(7, 4),
+            Point(1, 4),
+        ]
+        actual: bool = in_polygon(point, hole)
+        if expected:
+            self.assertTrue(actual, f"Expected {point} to be in or on the hole")
+        else:
+            self.assertFalse(actual, f"Expected {point} not to be in or on the hole")
+
+    @parameterized.expand([param(Point(7, 3), False)])
+    def test_multiple_horizontal_lines_2(self, point: Point, expected: bool) -> None:
+        hole: Hole = [
+            Point(1, 1),
+            Point(8, 1),
+            Point(8, 2),
+            Point(6, 2),
+            Point(6, 3),
+            Point(5, 3),
+            Point(4, 3),
+            Point(4, 4),
+            Point(1, 4),
+        ]
+        actual: bool = in_polygon(point, hole)
+        if expected:
+            self.assertTrue(actual, f"Expected {point} to be in or on the hole")
+        else:
+            self.assertFalse(actual, f"Expected {point} not to be in or on the hole")
