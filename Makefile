@@ -7,7 +7,7 @@ ifeq (run,$(firstword $(MAKECMDGOALS)))
   $(eval $(RUN_ARGS):;@:)
 endif
 
-.PHONY: lint pretty run setup test
+.PHONY: lint pretty isort run setup test
 
 
 setup:
@@ -24,6 +24,9 @@ pretty:
 
 lint:
 	poetry run flake8 .
+
+isort:
+	poetry run isort .
 
 pr: pretty lint test
 

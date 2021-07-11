@@ -8,6 +8,10 @@ packages = [
     { include = "solver" },
 ]
 
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
 [tool.poetry.scripts]
 solver = 'solver.app:run'
 submit = 'solver.submit:submit_problem'
@@ -28,6 +32,7 @@ parameterized = "^0.8.1"
 pytest = "^6.2.4"
 requests_mock = "^1.9.3"
 types-requests = "^2.25.0"
+isort = "^5.9.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
