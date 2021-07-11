@@ -233,47 +233,23 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
             # opt.assert_and_track(i == a, f"foo{i}")
 
     def minimize_dislikes():
-        min_hole_dist_points = []
-        for idx, h in enumerate(problem.hole):
-            p_x = z3.BitVec(f"hole_idx{idx}_dist_x", x_sort)
-            p_y = z3.BitVec(f"hole_idx{idx}_dist_y", y_sort)
+        min_dist = []
+        for i, h in enumerate(problem.hole):
+            dist = []
+            for j, p in enumerate(problem.figure.vertices):
+                dist.append(z3_mh_distance(h, p))
 
-            vertex = mk_vertex(p_x, p_y)
-            min_hole_dist_points.append(vertex)
+            b0 = dist[0]
+            for b in dist[1:]:
+                b0 = z3.If(b < 0, b, b0)
+            min_dist.append(b0)
 
-            opt.add(z3.Or(*[vertex == figure_point for figure_point in vertices]))
+        total_dislikes = sum(min_dist)
 
-            # opt.minimize(distance(Point(p_x, p_y), h))
-
-        opt.add(z3.Distinct(*min_hole_dist_points))
-
-        # mixed_size = xs[0].size() + ys[0].size()
-        # result_size = z3.BitVecSort(
-        #     max(xs[0].size() - ys[0].size(), ys[0].size() - xs[0].size()) + mixed_size
-        # )
-
-        min_dislike_sum = sum(
-            z3_mh_distance(Point(vertex_x(v), vertex_y(v)), h)
-            for v, h in zip(min_hole_dist_points, problem.hole)
-        )
-
-        total_dislikes = z3.BitVec(
-            "dislikes", min_dislike_sum.size()
-        )  # what size should this be and why is it 21??
-
-        opt.add(total_dislikes == min_dislike_sum)
         opt.add(total_dislikes < 6000)
 
         if minimize:
             opt.minimize(total_dislikes)
-
-    # print(distances)
-
-    # edges = p.figure.edges
-    # print(edges)
-
-    # b = opt.maximize(foo)
-    # print(b)
 
     constraints = [
         constrain_to_xy_in_hole,
@@ -302,8 +278,6 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
         #     print(core)
 
         assert res == z3.sat, "Failed to solve"
-
-    res = opt.check()
 
     if res != z3.sat:
         print(
