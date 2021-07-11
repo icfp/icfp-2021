@@ -55,10 +55,16 @@ def in_polygon(p: Point, h: Hole) -> bool:
                 if (fst.y <= p.y <= snd.y) or (snd.y <= p.y <= fst.y):
                     return True  # on the y edge between the two points
 
+            # Skip all horizontal lines, but remember the previous state
+            # This is because horizontal lines don't affect "inside-ness"
+            if fst.y == snd.y:
+                continue
+
             # Test whether we hit the second point. This means we hit the vertex at the end of the line.
             # We will remember this, and not test intersection.
             # However, only do this if we are not the last element
-            if snd.y == p.y and index < (len(h) - 1):
+            if snd.y == p.y and snd.x < p.x and index < (len(h) - 1):
+                print("End Vertex hits ray")
                 hit_end_vertex = True
                 previous_start = fst
                 continue
@@ -71,28 +77,28 @@ def in_polygon(p: Point, h: Hole) -> bool:
                 # If they cross the ray, drop below and test the intersection.
                 hit_end_vertex = False
                 if previous_start.y >= p.y and snd.y >= p.y:
-                    # If we are the last edge and its horizontal, go to the hack
-                    if fst.y != snd.y:
-                        continue
-                elif previous_start.y <= p.y and snd.y <= p.y:
-                    if fst.y != snd.y:
-                        continue
-
-            # This is a hack. If we are the last element and we hit the end vertex, check what the first element
-            # is, and compensate. The first element would have hit.
-            if snd.y == p.y and index == (len(h) - 1):
-                # To compensate, we should compute intersection only if last edge and first edge are on the same
-                # side of the ray. This negates the incorrect computation on the first edge
-                next_snd = h[1]
-                if fst.y == snd.y:
-                    # Special case - the last line is horizontal.
-                    if p.x > snd.x:
-                        inside = not inside
                     continue
-                elif not (
-                    (fst.y < p.y and next_snd.y < p.y)
-                    or (fst.y > p.y and next_snd.y > p.y)
-                ):
+                elif previous_start.y <= p.y and snd.y <= p.y:
+                    continue
+            else:
+                # Otherwise, if the ray crosses fst (this can really only happen at the start of the iteration)
+                # Ignore this hit.
+                if fst.y == p.y and fst.x < p.x:
+                    continue
+
+            # If we are the last element and we hit the end vertex, check what the first element
+            # is, and see if both edges are on the same side. If they are, skip. Otherwise, lets test if
+            # the ray crosses this last edge. This is a manual lookahead that is captured in the state for all the other
+            # iterations.
+            if snd.y == p.y and index == (len(h) - 1):
+                # We have to skip ahead of any horizontal lines
+                idx = 1
+                next_snd = h[idx]
+                while snd.y == next_snd.y:
+                    idx += 1
+                    next_snd = h[idx]
+
+                if (fst.y < p.y and next_snd.y < p.y) or (fst.y > p.y and next_snd.y > p.y):
                     continue
 
             # Compute sx
@@ -100,6 +106,9 @@ def in_polygon(p: Point, h: Hole) -> bool:
             product = (snd.x - fst.x) * ratio
             sx = fst.x + product
             if p.x > sx:
+                print(fst)
+                print(snd)
+                print("flip")
                 inside = not inside
 
     return inside

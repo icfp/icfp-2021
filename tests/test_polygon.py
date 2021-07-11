@@ -143,3 +143,18 @@ class TestPolygon(TestCase):
             self.assertTrue(actual, f"Expected {point} to be in or on the hole")
         else:
             self.assertFalse(actual, f"Expected {point} not to be in or on the hole")
+
+    @parameterized.expand(
+        [
+            param(Point(20, 25), True),
+            param(Point(500, 25), False),
+        ]
+    )
+    def test_problem_2_bug(self, point: Point, expected: bool) -> None:
+        problem = load_problem(2)
+        hole: Hole = problem.hole
+        actual: bool = in_polygon(point, hole)
+        if expected:
+            self.assertTrue(actual, f"Expected {point} to be in or on the hole")
+        else:
+            self.assertFalse(actual, f"Expected {point} not to be in or on the hole")
