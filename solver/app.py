@@ -1,9 +1,12 @@
 import json
 from pathlib import Path
-from typing import Iterable, List, Dict, NamedTuple
+from typing import Iterable, List, Dict, NamedTuple, Callable
 
 import click
 import math
+import time
+import datetime
+
 import z3
 from pydantic.dataclasses import dataclass
 
@@ -14,15 +17,6 @@ from collections import defaultdict
 
 ROOT_DIR = Path(__file__).parent.parent
 PROBLEMS_DIR = ROOT_DIR / "problems"
-
-
-def min_max_edge_length(epsilon: int, source: Point, target: Point) -> EdgeLengthRange:
-    max_ratio = epsilon / 1000000
-    edge_length = distance(source, target)
-    min_length = edge_length * (1 - max_ratio)
-    max_length = edge_length * (1 + max_ratio)
-
-    return EdgeLengthRange(min=math.ceil(min_length), max=int(max_length))
 
 
 def load_problem(problem_number: int) -> Problem:
@@ -42,6 +36,36 @@ def distance(p1: Point, p2: Point):
     pow_x = delta_x * delta_x
     pow_y = delta_y * delta_y
     return pow_x + pow_y
+
+
+def mh_distance(p1: Point, p2: Point):
+    delta_x = p1.x - p2.x
+    delta_y = p1.y - p2.y
+
+    return abs(delta_x) + abs(delta_y)
+
+
+def z3_mh_distance(p1: Point, p2: Point):
+    delta_x = p1.x - p2.x
+    delta_y = p1.y - p2.y
+
+    return z3.If(delta_x < 0, -delta_x, delta_x) + z3.If(delta_y < 0, -delta_y, delta_y)
+
+
+DistanceFunc = Callable[[Point, Point], int]
+
+
+def min_max_edge_length(
+    epsilon: int, source: Point, target: Point, distance_func: DistanceFunc = distance
+) -> EdgeLengthRange:
+    edge_length = distance_func(source, target)
+
+    max_ratio = epsilon / 1000000
+
+    min_length = edge_length * (1 - max_ratio)
+    max_length = edge_length * (1 + max_ratio)
+
+    return EdgeLengthRange(min=math.ceil(min_length), max=int(max_length))
 
 
 def dislikes(hole: Hole, pose: Figure):
@@ -113,7 +137,6 @@ def make_ranges(
 
 
 def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Solution:
-
     problem = load_problem(problem_number)
 
     stats = compute_statistics(problem)
@@ -150,95 +173,103 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
     vertex, mk_vertex, (vertex_x, vertex_y) = z3.TupleSort("vertex", (x_sort, y_sort))
     vertices = [mk_vertex(x, y) for x, y in zip(xs, ys)]
 
+    def constrain_to_xy_in_hole():
+        ranges = list(make_ranges(in_hole_map, stats))
+
+        for x_var, y_var in point_vars:
+            opt.add(
+                z3.Or(
+                    *[
+                        z3.And(
+                            x_var == x,
+                            z3.Or(
+                                *[
+                                    z3.And(r.start <= y_var, y_var <= r.end)
+                                    for r in y_ranges
+                                ]
+                            ),
+                        )
+                        for x, y_ranges in ranges
+                    ]
+                )
+            )
+
     # add a distinct constraint on the vertex points
-    opt.add(z3.Distinct(*vertices))
+    def constrain_unique_positions():
+        opt.add(z3.Distinct(*vertices))
 
     # calculate edge distances
-    distance_limits = [
-        min_max_edge_length(
-            problem.epsilon, problem.figure.vertices[p1], problem.figure.vertices[p2]
-        )
-        for p1, p2 in problem.figure.edges
-    ]
-    exact_distances = [
-        distance(problem.figure.vertices[p1], problem.figure.vertices[p2])
-        for p1, p2 in problem.figure.edges
-    ]
-    distance_vars = [
-        distance(Point(xs[p1], ys[p1]), Point(xs[p2], ys[p2]))
-        for p1, p2 in problem.figure.edges
-    ]
-    # for limit, distance_var in list(zip(distance_limits, distance_vars))[5:7]:
-    for limit, distance_var, exact_distance in zip(
-        distance_limits, distance_vars, exact_distances
-    ):
-        # print(limit, distance_var)
-
-        assert limit.min <= exact_distance <= limit.max
-
-        # Exact distances
-        # opt.add(distance_var == exact_distance)
-
-        # Min/max
-        opt.add(distance_var >= limit.min)
-        opt.add(distance_var <= limit.max)
-
-        # opt.add(i-1 <= a)
-        # opt.add(a <= i+1)
-        # opt.assert_and_track(i == a, f"foo{i}")
-
-    ranges = list(make_ranges(in_hole_map, stats))
-
-    for x_var, y_var in point_vars:
-        opt.add(
-            z3.Or(
-                *[
-                    z3.And(
-                        x_var == x,
-                        z3.Or(
-                            *[
-                                z3.And(r.start <= y_var, y_var <= r.end)
-                                for r in y_ranges
-                            ]
-                        ),
-                    )
-                    for x, y_ranges in ranges
-                ]
+    def constrain_distances(distance_func: DistanceFunc = distance):
+        distance_limits = [
+            min_max_edge_length(
+                problem.epsilon,
+                problem.figure.vertices[p1],
+                problem.figure.vertices[p2],
+                distance_func=distance_func,
             )
+            for p1, p2 in problem.figure.edges
+        ]
+        exact_distances = [
+            distance_func(problem.figure.vertices[p1], problem.figure.vertices[p2])
+            for p1, p2 in problem.figure.edges
+        ]
+        distance_values = [
+            distance_func(Point(xs[p1], ys[p1]), Point(xs[p2], ys[p2]))
+            for p1, p2 in problem.figure.edges
+        ]
+        # for limit, distance_var in list(zip(distance_limits, distance_vars))[5:7]:
+        for limit, distance_value, exact_distance in zip(
+            distance_limits, distance_values, exact_distances
+        ):
+            # print(limit, distance_var)
+
+            # assert limit.min <= exact_distance <= limit.max
+
+            # Exact distances
+            # opt.add(distance_value == exact_distance)
+
+            # Min/max
+            opt.add(distance_value >= limit.min)
+            opt.add(distance_value <= limit.max)
+
+            # opt.add(i-1 <= a)
+            # opt.add(a <= i+1)
+            # opt.assert_and_track(i == a, f"foo{i}")
+
+    def minimize_dislikes():
+        min_hole_dist_points = []
+        for idx, h in enumerate(problem.hole):
+            p_x = z3.BitVec(f"hole_idx{idx}_dist_x", x_sort)
+            p_y = z3.BitVec(f"hole_idx{idx}_dist_y", y_sort)
+
+            vertex = mk_vertex(p_x, p_y)
+            min_hole_dist_points.append(vertex)
+
+            opt.add(z3.Or(*[vertex == figure_point for figure_point in vertices]))
+
+            # opt.minimize(distance(Point(p_x, p_y), h))
+
+        opt.add(z3.Distinct(*min_hole_dist_points))
+
+        # mixed_size = xs[0].size() + ys[0].size()
+        # result_size = z3.BitVecSort(
+        #     max(xs[0].size() - ys[0].size(), ys[0].size() - xs[0].size()) + mixed_size
+        # )
+
+        min_dislike_sum = sum(
+            z3_mh_distance(Point(vertex_x(v), vertex_y(v)), h)
+            for v, h in zip(min_hole_dist_points, problem.hole)
         )
 
-    min_hole_dist_points = []
-    for idx, h in enumerate(problem.hole):
-        p_x = z3.BitVec(f"hole_idx{idx}_dist_x", x_sort)
-        p_y = z3.BitVec(f"hole_idx{idx}_dist_y", y_sort)
+        total_dislikes = z3.BitVec(
+            "dislikes", min_dislike_sum.size()
+        )  # what size should this be and why is it 21??
 
-        vertex = mk_vertex(p_x, p_y)
-        min_hole_dist_points.append(vertex)
+        opt.add(total_dislikes == min_dislike_sum)
+        opt.add(total_dislikes < 6000)
 
-        opt.add(z3.Or(*[vertex == figure_point for figure_point in vertices]))
-
-        # opt.minimize(distance(Point(p_x, p_y), h))
-
-    opt.add(z3.Distinct(*min_hole_dist_points))
-
-    # mixed_size = xs[0].size() + ys[0].size()
-    # result_size = z3.BitVecSort(
-    #     max(xs[0].size() - ys[0].size(), ys[0].size() - xs[0].size()) + mixed_size
-    # )
-
-    min_dislike_sum = sum(
-        distance(Point(vertex_x(v), vertex_y(v)), h)
-        for v, h in zip(min_hole_dist_points, problem.hole)
-    )
-
-    total_dislikes = z3.BitVec(
-        "dislikes", min_dislike_sum.size()
-    )  # what size should this be and why is it 21??
-
-    opt.add(total_dislikes == min_dislike_sum)
-
-    if minimize:
-        opt.minimize(total_dislikes)
+        if minimize:
+            opt.minimize(total_dislikes)
 
     # print(distances)
 
@@ -248,13 +279,38 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> So
     # b = opt.maximize(foo)
     # print(b)
 
-    res = opt.check()
-    assert res == z3.sat, "Failed to solve"
+    constraints = [
+        constrain_to_xy_in_hole,
+        constrain_unique_positions,
+        constrain_distances,
+        minimize_dislikes,
+    ]
+
+    for c in constraints:
+        print(f"Adding constraint: {c.__name__}")
+
+        t0 = time.perf_counter()
+
+        c()
+        res = opt.check()
+
+        t1 = time.perf_counter()
+
+        total = datetime.timedelta(seconds=t1 - t0)
+
+        print("Result", res, "- elapsed time:", total)
+
+        # if str(res) != z3.sat:
+        #     core = opt.unsat_core()
+        #     print(core["foo20"])
+        #     print(core)
+
+        assert res == z3.sat, "Failed to solve"
+
     # if str(res) != "sat":
     #     core = opt.unsat_core()
     #     print(core["foo20"])
     #     print(core)
-    print(res)
 
     model = opt.model()
 

@@ -64,7 +64,7 @@ def in_polygon(p: Point, h: Hole) -> bool:
             # We will remember this, and not test intersection.
             # However, only do this if we are not the last element
             if snd.y == p.y and snd.x < p.x and index < (len(h) - 1):
-                print("End Vertex hits ray")
+                # print("End Vertex hits ray")
                 hit_end_vertex = True
                 previous_start = fst
                 continue
@@ -108,9 +108,9 @@ def in_polygon(p: Point, h: Hole) -> bool:
             product = (snd.x - fst.x) * ratio
             sx = fst.x + product
             if p.x > sx:
-                print(fst)
-                print(snd)
-                print("flip")
+                # print(fst)
+                # print(snd)
+                # print("flip")
                 inside = not inside
 
     return inside

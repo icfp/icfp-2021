@@ -175,6 +175,10 @@
 
 
       function makeD3FigurePath(figure) {
+        if(!figure || !figure.vertices || figure.vertices.length === 0) {
+          return '';
+        }
+
         let edges = figure.edges;
         let vertices = figure.vertices;
         console.log(edges)
@@ -257,7 +261,7 @@
           .selectAll('circle.solution')
           .data(solution.vertices || [])
           .enter().append("circle")
-          .attr('class', 'figure')
+          .attr('class', 'solution')
           .attr("r", 1)
           .attr("cx", function (d) {
             return d[0];
