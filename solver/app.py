@@ -4,7 +4,7 @@ import os
 import pickle
 import time
 from collections import defaultdict
-from os.path import exists
+from os.path import exists, isdir
 from pathlib import Path
 from typing import Dict, Iterable, List
 
@@ -184,14 +184,19 @@ def _generate(problem_number: int) -> Output:
     problem = load_problem(problem_number)
     stats = compute_statistics(problem)
     in_hole_map = make_in_hole_matrix(stats, problem)
-    allowed_edges: Dict[Point, List[Point]] = edges_in_hole(in_hole_map, problem.hole)
-
-    os.mkdir(
-        "pickled",
+    disallowed_edges: Dict[Point, List[Point]] = invalid_intersecting_edges(
+        in_hole_map, problem.hole
     )
-    with open("pickled/allowed_edges_" + problem_number + ".pickle", "wb") as f:
-        pickle.dump(allowed_edges, f)
 
+    if not isdir("pickled"):
+        os.mkdir(
+            "pickled",
+        )
+
+    with open("pickled/disallowed_edges_" + problem_number + ".pickle", "wb") as f:
+        pickle.dump(disallowed_edges, f)
+
+    print("Successfully generated pickled file.")
     return Output(problem=problem, solution=Solution([]), map_points=[])
 
 
@@ -211,7 +216,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
     if exists("pickled/disallowed_edges_" + problem_number + ".pickle"):
         print("Using picked disallowed_edges")
         with open("pickled/disallowed_edges_" + problem_number + ".pickle", "rb") as f:
-            allowed_edges = pickle.load(f)
+            disallowed_edges = pickle.load(f)
     else:
         print("Pickled allowed_edges not found. Computing manually.")
         disallowed_edges = invalid_intersecting_edges(in_hole_map, problem.hole)
