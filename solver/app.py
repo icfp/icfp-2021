@@ -154,21 +154,27 @@ def make_ranges(
             yield YPointRange(x=x, y_inclusive_ranges=y_ranges)
 
 
-def edges_in_hole(lookup: InHoleLookup, hole: Hole) -> Dict[Point, set[Point]]:
+def invalid_intersecting_edges(
+    lookup: InHoleLookup, hole: Hole
+) -> Dict[Point, set[Point]]:
     inside_points = [point for point, inside in lookup.items() if inside]
     hole_edges = list(zip(hole, hole[1:] + [hole[0]]))
-    lookup = defaultdict(set)
+    intersecting_edges = defaultdict(set)
     for p1 in inside_points:
 
         for p2 in inside_points:
             if p1.x == p2.x and p1.y == p2.y:
                 continue
 
-            if not any(polygon.do_intersect(p1, p2, e1, e2) for e1, e2 in hole_edges):
-                lookup[p1].add(p2)
-                lookup[p2].add(p1)
+            for e1, e2 in hole_edges:
+                if polygon.do_intersect(p1, p2, e1, e2):
+                    # we are excluding valid edges where the line terminates on an edge vertex
+                    # but not fixing yet because there are also invalid edges that terminate
+                    # on an edge vertex
+                    intersecting_edges[p1].add(p2)
+                    intersecting_edges[p2].add(p1)
 
-    return lookup
+    return intersecting_edges
 
 
 def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Output:
@@ -182,7 +188,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     print(f"Building allowed edges for {problem_number}")
     t0 = time.perf_counter()
-    allowed_edges: Dict[Point, List[Point]] = edges_in_hole(in_hole_map, problem.hole)
+    disallowed_edges: Dict[Point, List[Point]] = invalid_intersecting_edges(in_hole_map, problem.hole)
 
     t1 = time.perf_counter()
 
@@ -190,7 +196,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     print("Done!.. elapsed time:", total)
 
-    # print(allowed_edges)
+    # print(disallowed_edges)
 
     print(f"Map Matrix Size {len(in_hole_map)}")
 
@@ -261,18 +267,18 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
             v_target = vertices[target]
 
             conditions = []
-            for allowed_source, allowed_targets in allowed_edges.items():
+            for allowed_source, disallowed_targets in disallowed_edges.items():
                 if_sources_match = v_source == mk_vertex(
                     allowed_source.x, allowed_source.y
                 )
                 conditions.append(if_sources_match)
 
                 target_constraints = [
-                    v_target == mk_vertex(allowed_target.x, allowed_target.y)
-                    for allowed_target in allowed_targets
+                    v_target != mk_vertex(disallowed_target.x, disallowed_target.y)
+                    for disallowed_target in disallowed_targets
                 ]
 
-                opt.add(z3.Implies(if_sources_match, z3.Or(*target_constraints)))
+                opt.add(z3.Implies(if_sources_match, z3.And(*target_constraints)))
 
             opt.add(z3.Or(*conditions))
 
