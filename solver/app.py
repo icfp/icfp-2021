@@ -260,13 +260,15 @@ def _run(
     point_vars = [Point(x, y) for x, y in zip(xs, ys)]
 
     vertex, mk_vertex, (vertex_x, vertex_y) = z3.TupleSort("vertex", (x_sort, y_sort))
-    vertices = [mk_vertex(x, y) for x, y in zip(xs, ys)]
 
     figure_points = [Point(x, y) for x, y in zip(xs, ys)]
+    figure_vertices = [mk_vertex(p.x, p.y) for p in figure_points]
+
     hole_points = [
         Point(z3.BitVecVal(p.x, x_sort), z3.BitVecVal(p.y, y_sort))
         for p in problem.hole
     ]
+    hole_vertices = [mk_vertex(p.x, p.y) for p in hole_points]
 
     # hole = [mk_vertex(p.x, p.y) for p in problem.hole]
 
@@ -357,7 +359,7 @@ def _run(
     # add a distinct constraint on the vertex points
     @constraint
     def constrain_unique_positions() -> DebugVars:
-        opt.add(z3.Distinct(*vertices))
+        opt.add(z3.Distinct(*figure_vertices))
 
         return {}
 
@@ -426,10 +428,21 @@ def _run(
             "min_handle": min_handle,
         }
 
+    @constraint
+    def figure_is_hole() -> DebugVars:
+        if len(hole_vertices) == len(figure_vertices):
+            print("Adding hole==figure soft constraint")
+            for h, f in zip(hole_vertices, figure_vertices):
+                print(h, f)
+                opt.add_soft(h == f)
+
+        return {}
+
     constraints: List[Constraint] = [
         minimize_dislikes,
         constrain_to_xy_in_hole,
         constrain_distances,
+        figure_is_hole,
     ]
 
     CONVEX_PROBLEMS = {
@@ -508,7 +521,7 @@ def _run(
                 Point(
                     model.eval(vertex_x(v)).as_long(), model.eval(vertex_y(v)).as_long()
                 )
-                for v in vertices
+                for v in figure_vertices
             ]
         except AttributeError:
             continue
