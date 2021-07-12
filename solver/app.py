@@ -1,9 +1,10 @@
 import datetime
+import json
 import math
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Iterable, Iterator, List
+from typing import Dict, Iterable, Iterator, List, Optional
 
 import click
 import z3
@@ -209,7 +210,20 @@ def invalid_intersecting_edges(
 def _run(
     problem_number: int, minimize: bool = False, debug: bool = False, timeout: int = 5 * 60 * 1000,
 ) -> Iterator[Output]:
+    with (ROOT_DIR / "state.json").open("rb") as h:
+        state = json.load(h)
+        state = {r["id"]: r for r in state}
+
     problem = load_problem(problem_number)
+    upper_bounds: Optional[int] = None
+    if problem_number in state:
+        past_result = state[problem_number]
+        if past_result["score"] == past_result["best"]:
+            print(f"Already have best result for {problem_number}")
+            return
+
+        upper_bounds = past_result["score"]
+        print(f"Starting search with upper bounds on dislikes {upper_bounds}")
 
     stats = compute_statistics(problem)
 
@@ -388,7 +402,9 @@ def _run(
         # dislikes are the sum of squared distances
         # total_dislikes = sum(i * i for i in min_dist)
         total_dislikes = sum(z3.SignExt(len(min_dist) - 1, i) for i in min_dist)
-        opt.add(total_dislikes >= 0)
+        opt.add(total_dislikes >= z3.BitVecVal(0, total_dislikes.sort()))
+        if upper_bounds is not None:
+            opt.add(total_dislikes < z3.BitVecVal(upper_bounds, total_dislikes.sort()))
 
         # opt.add(total_dislikes < 10000)
         # opt.add(total_dislikes < 3000)
