@@ -1,7 +1,10 @@
 import datetime
 import math
+import os
+import pickle
 import time
 from collections import defaultdict
+from os.path import exists, isdir
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List
 
@@ -16,6 +19,7 @@ from .types import (
     DebugVars,
     DistanceFunc,
     EdgeLengthRange,
+    EdgeSegment,
     Figure,
     Hole,
     InclusiveRange,
@@ -154,20 +158,72 @@ def make_ranges(
             yield YPointRange(x=x, y_inclusive_ranges=y_ranges)
 
 
-def edges_in_hole(lookup: InHoleLookup, hole: Hole) -> Dict[Point, List[Point]]:
+def hole_edges(hole: Hole) -> list[EdgeSegment]:
+    return list(map(lambda t: EdgeSegment(t[0], t[1]), zip(hole, hole[1:] + [hole[0]])))
+
+
+def search(pair):
+    p1, p2, hole_edges = pair
+    if any(polygon.do_intersect(p1, p2, e1, e2) for e1, e2 in hole_edges):
+        # we are excluding valid edges where the line terminates on an edge vertex
+        # but not fixing yet because there are also invalid edges that terminate
+        # on an edge vertex
+        return [p1, p2]
+    return None
+
+
+def invalid_intersecting_edges(
+    lookup: InHoleLookup, hole: Hole
+) -> Dict[Point, set[Point]]:
+    import multiprocessing as mp
     inside_points = [point for point, inside in lookup.items() if inside]
     hole_edges = list(zip(hole, hole[1:] + [hole[0]]))
-    lookup = defaultdict(list)
-    for p1 in inside_points:
-        for p2 in inside_points:
-            if p1.x == p2.x and p1.y == p2.y:
-                continue
 
-            for e1, e2 in hole_edges:
-                if not polygon.do_intersect(p1, p2, e1, e2):
-                    lookup[p1].append(p2)
+    print('Building search space')
 
-    return lookup
+    search_points = [(p1, p2, hole_edges)
+                     for p1 in inside_points
+                     for p2 in inside_points
+                     if not (p1.x == p2.x and p1.y == p2.y)]
+
+    print('Built search space')
+
+    intersecting_edges = defaultdict(set)
+
+    with mp.Pool(8) as p:
+        results = p.map(search, search_points)
+
+    print('Done')
+
+    for result in results:
+        if result:
+            p1, p2 = result[0], result[1]
+            intersecting_edges[p1].add(p2)
+            intersecting_edges[p2].add(p1)
+
+    print('Built results map')
+
+    return intersecting_edges
+
+
+def _generate(problem_number: int) -> Output:
+    problem = load_problem(problem_number)
+    stats = compute_statistics(problem)
+    in_hole_map = make_in_hole_matrix(stats, problem)
+    disallowed_edges: Dict[Point, List[Point]] = invalid_intersecting_edges(
+        in_hole_map, problem.hole
+    )
+
+    if not isdir("pickled"):
+        os.mkdir(
+            "pickled",
+        )
+
+    with open("pickled/disallowed_edges_" + problem_number + ".pickle", "wb") as f:
+        pickle.dump(disallowed_edges, f)
+
+    print("Successfully generated pickled file.")
+    return Output(problem=problem, solution=Solution([]), map_points=[])
 
 
 def _run(
@@ -181,9 +237,25 @@ def _run(
 
     map_points = [[point.x, point.y] for point, inside in in_hole_map.items() if inside]
 
-    allowed_edges: Dict[Point, List[Point]] = edges_in_hole(in_hole_map, problem.hole)
+    print(f"Building allowed edges for {problem_number}")
+    t0 = time.perf_counter()
+    disallowed_edges: Dict[Point, List[Point]]
 
-    # print(allowed_edges)
+    if exists("pickled/disallowed_edges_" + problem_number + ".pickle"):
+        print("Using picked disallowed_edges")
+        with open("pickled/disallowed_edges_" + problem_number + ".pickle", "rb") as f:
+            disallowed_edges = pickle.load(f)
+    else:
+        print("Pickled allowed_edges not found. Computing manually.")
+        disallowed_edges = invalid_intersecting_edges(in_hole_map, problem.hole)
+        # allowed_edges = edges_in_hole(in_hole_map, problem.hole)
+        disallowed_edges = {}
+
+    t1 = time.perf_counter()
+
+    total = datetime.timedelta(seconds=t1 - t0)
+
+    print("Done!.. elapsed time:", total)
 
     print(f"Map Matrix Size {len(in_hole_map)}")
 
@@ -277,25 +349,50 @@ def _run(
         return {}
 
     @constraint
+    def constrain_to_edges_in_hole_as_z3_func() -> DebugVars:
+        for source, target in problem.figure.edges:
+            source_x = xs[source]
+            source_y = ys[source]
+
+            target_x = xs[target]
+            target_y = ys[target]
+
+            source_point = Point(source_x, source_y)
+            target_point = Point(target_x, target_y)
+
+            for hole_edge in hole_edges(problem.hole):
+                opt.add(
+                    z3.Not(
+                        polygon.do_intersect_z3(
+                            source_point,
+                            target_point,
+                            hole_edge.source,
+                            hole_edge.target,
+                        )
+                    )
+                )
+
+        return {}
+
+    @constraint
     def constrain_to_edges_in_hole() -> DebugVars:
         for source, target in problem.figure.edges:
             v_source = vertices[source]
             v_target = vertices[target]
 
             conditions = []
-            for allowed_source, allowed_targets in allowed_edges.items():
-                conditions.append(
-                    z3.And(
-                        v_source == mk_vertex(allowed_source.x, allowed_source.y),
-                        z3.Or(
-                            *[
-                                v_target
-                                == mk_vertex(allowed_target.x, allowed_target.y)
-                                for allowed_target in allowed_targets
-                            ]
-                        ),
-                    )
+            for allowed_source, disallowed_targets in disallowed_edges.items():
+                if_sources_match = v_source == mk_vertex(
+                    allowed_source.x, allowed_source.y
                 )
+                conditions.append(if_sources_match)
+
+                target_constraints = [
+                    v_target != mk_vertex(disallowed_target.x, disallowed_target.y)
+                    for disallowed_target in disallowed_targets
+                ]
+
+                opt.add(z3.Implies(if_sources_match, z3.And(*target_constraints)))
 
             opt.add(z3.Or(*conditions))
 
@@ -411,6 +508,12 @@ def _run(
         # virtual_points.disable,
         constrain_distances,
         minimize_dislikes,
+        # constrain_to_edges_in_hole.disable,
+        # constrain_to_edges_in_hole_as_z3_func.disable,
+        # constrain_unique_positions.disable,
+        # minimize_dislikes,
+        # virtual_points.disable,
+        # constrain_distances.disable,
     ]
 
     debug_vars = {}
@@ -420,6 +523,9 @@ def _run(
         t0 = time.perf_counter()
 
         debug_vars.update(**c())
+
+        print("constraint added... checking...")
+
         res = opt.check()
 
         t1 = time.perf_counter()
@@ -487,7 +593,8 @@ def _run(
 @click.argument("problem_number")
 @click.option("--minimize/--no-minimize", default=False)
 @click.option("--debug/--no-debug", default=False)
-def run(problem_number: int, minimize: bool, debug: bool) -> Output:
+@click.option("--generate/--no-generate", default=False)
+def run(problem_number: int, minimize: bool, debug: bool, generate: bool) -> Output:
     from z3 import set_option
 
     set_option("parallel.enable", True)
