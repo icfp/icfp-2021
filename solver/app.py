@@ -208,8 +208,13 @@ def invalid_intersecting_edges(
 
 
 def _run(
-    problem_number: int, minimize: bool = False, debug: bool = False, timeout: int = 5 * 60 * 1000,
+    problem_number: int,
+    minimize: bool = False,
+    debug: bool = False,
+    timeout: int = 5 * 60 * 1000,
 ) -> Iterator[Output]:
+    problem_number = int(problem_number)
+
     with (ROOT_DIR / "state.json").open("rb") as h:
         state = json.load(h)
         state = {r["id"]: r for r in state}
