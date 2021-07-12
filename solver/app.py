@@ -1,10 +1,7 @@
 import datetime
 import math
-import os
-import pickle
 import time
 from collections import defaultdict
-from os.path import exists, isdir
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List
 
@@ -176,24 +173,27 @@ def invalid_intersecting_edges(
     lookup: InHoleLookup, hole: Hole
 ) -> Dict[Point, set[Point]]:
     import multiprocessing as mp
+
     inside_points = [point for point, inside in lookup.items() if inside]
     hole_edges = list(zip(hole, hole[1:] + [hole[0]]))
 
-    print('Building search space')
+    print("Building search space")
 
-    search_points = [(p1, p2, hole_edges)
-                     for p1 in inside_points
-                     for p2 in inside_points
-                     if not (p1.x == p2.x and p1.y == p2.y)]
+    search_points = [
+        (p1, p2, hole_edges)
+        for p1 in inside_points
+        for p2 in inside_points
+        if not (p1.x == p2.x and p1.y == p2.y)
+    ]
 
-    print('Built search space')
+    print("Built search space")
 
     intersecting_edges = defaultdict(set)
 
     with mp.Pool(8) as p:
         results = p.map(search, search_points)
 
-    print('Done')
+    print("Done")
 
     for result in results:
         if result:
@@ -201,33 +201,13 @@ def invalid_intersecting_edges(
             intersecting_edges[p1].add(p2)
             intersecting_edges[p2].add(p1)
 
-    print('Built results map')
+    print("Built results map")
 
     return intersecting_edges
 
 
-def _generate(problem_number: int) -> Output:
-    problem = load_problem(problem_number)
-    stats = compute_statistics(problem)
-    in_hole_map = make_in_hole_matrix(stats, problem)
-    disallowed_edges: Dict[Point, List[Point]] = invalid_intersecting_edges(
-        in_hole_map, problem.hole
-    )
-
-    if not isdir("pickled"):
-        os.mkdir(
-            "pickled",
-        )
-
-    with open("pickled/disallowed_edges_" + problem_number + ".pickle", "wb") as f:
-        pickle.dump(disallowed_edges, f)
-
-    print("Successfully generated pickled file.")
-    return Output(problem=problem, solution=Solution([]), map_points=[])
-
-
 def _run(
-    problem_number: int, minimize: bool = False, debug: bool = False
+    problem_number: int, minimize: bool = False, debug: bool = False, timeout: int = 5 * 60 * 1000,
 ) -> Iterator[Output]:
     problem = load_problem(problem_number)
 
@@ -237,30 +217,10 @@ def _run(
 
     map_points = [[point.x, point.y] for point, inside in in_hole_map.items() if inside]
 
-    print(f"Building allowed edges for {problem_number}")
-    t0 = time.perf_counter()
-    disallowed_edges: Dict[Point, List[Point]]
-
-    if exists("pickled/disallowed_edges_" + problem_number + ".pickle"):
-        print("Using picked disallowed_edges")
-        with open("pickled/disallowed_edges_" + problem_number + ".pickle", "rb") as f:
-            disallowed_edges = pickle.load(f)
-    else:
-        print("Pickled allowed_edges not found. Computing manually.")
-        disallowed_edges = invalid_intersecting_edges(in_hole_map, problem.hole)
-        # allowed_edges = edges_in_hole(in_hole_map, problem.hole)
-        disallowed_edges = {}
-
-    t1 = time.perf_counter()
-
-    total = datetime.timedelta(seconds=t1 - t0)
-
-    print("Done!.. elapsed time:", total)
-
     print(f"Map Matrix Size {len(in_hole_map)}")
 
     opt = z3.Optimize()
-    opt.set("opt.timeout", 5 * 60 * 1000)
+    opt.set("opt.timeout", timeout)
 
     x_bits = bits_for(i.x for i in problem.hole)
     y_bits = bits_for(i.y for i in problem.hole)
@@ -374,30 +334,6 @@ def _run(
 
         return {}
 
-    @constraint
-    def constrain_to_edges_in_hole() -> DebugVars:
-        for source, target in problem.figure.edges:
-            v_source = vertices[source]
-            v_target = vertices[target]
-
-            conditions = []
-            for allowed_source, disallowed_targets in disallowed_edges.items():
-                if_sources_match = v_source == mk_vertex(
-                    allowed_source.x, allowed_source.y
-                )
-                conditions.append(if_sources_match)
-
-                target_constraints = [
-                    v_target != mk_vertex(disallowed_target.x, disallowed_target.y)
-                    for disallowed_target in disallowed_targets
-                ]
-
-                opt.add(z3.Implies(if_sources_match, z3.And(*target_constraints)))
-
-            opt.add(z3.Or(*conditions))
-
-        return {}
-
     # add a distinct constraint on the vertex points
     @constraint
     def constrain_unique_positions() -> DebugVars:
@@ -420,7 +356,7 @@ def _run(
         distance_values = [
             distance_func(figure_points[p1], figure_points[p2]) for p1, p2 in edges
         ]
-        # for limit, distance_var in list(zip(distance_limits, distance_vars))[5:7]:
+
         for limit, distance_value in zip(distance_limits, distance_values):
             # print(limit, distance_var)
 
@@ -433,10 +369,6 @@ def _run(
             # Min/max
             opt.add(distance_value >= limit.min)
             opt.add(distance_value <= limit.max)
-
-            # opt.add(i-1 <= a)
-            # opt.add(a <= i+1)
-            # opt.assert_and_track(i == a, f"foo{i}")
 
         return {}
 
@@ -472,82 +404,38 @@ def _run(
             "min_handle": min_handle,
         }
 
-    @constraint
-    def virtual_points():
-        min_hole_dist_points = []
-        for idx, h in enumerate(problem.hole):
-            p_x = z3.BitVec(f"hole_idx{idx}_dist_x", x_sort)
-            p_y = z3.BitVec(f"hole_idx{idx}_dist_y", y_sort)
-
-            vertex = mk_vertex(p_x, p_y)
-            min_hole_dist_points.append(vertex)
-
-            opt.add(z3.Or(*[vertex == figure_point for figure_point in vertices]))
-
-            opt.minimize(distance(Point(p_x, p_y), h))
-
-        opt.add(z3.Distinct(*min_hole_dist_points))
-
-        # min_dislike_sum = sum(
-        #     distance(Point(vertex_x(v), vertex_y(v)), h)
-        #     for v, h in zip(min_hole_dist_points, problem.hole)
-        # )
-
-        # total_dislikes = z3.BitVec("dislikes", min_dislike_sum.size())
-
-        # opt.add(total_dislikes == min_dislike_sum)
-        # opt.add(total_dislikes < 6000)
-        # opt.minimize(total_dislikes)
-
-        return {}
-
     constraints: List[Constraint] = [
         constrain_to_xy_in_hole,
-        # constrain_unique_positions.disable,
-        # constrain_to_edges_in_hole.disable,
-        # virtual_points.disable,
         constrain_distances,
+        constrain_to_edges_in_hole_as_z3_func,
         minimize_dislikes,
-        # constrain_to_edges_in_hole.disable,
-        # constrain_to_edges_in_hole_as_z3_func.disable,
-        # constrain_unique_positions.disable,
-        # minimize_dislikes,
-        # virtual_points.disable,
-        # constrain_distances.disable,
     ]
 
     debug_vars = {}
     for c in constraints:
         print(f"Adding constraint: {c.name}")
-
-        t0 = time.perf_counter()
-
         debug_vars.update(**c())
 
-        print("constraint added... checking...")
+    while True:
+        total_dislikes = debug_vars["total_dislikes"]
+        min_handle = debug_vars["min_handle"]
+        try:
+            opt.add(
+                total_dislikes
+                < z3.Int2BV(opt.upper(min_handle), total_dislikes.sort().size())
+            )
+        except z3.z3types.Z3Exception:
+            pass
 
+        print("Starting check")
+        t0 = time.perf_counter()
         res = opt.check()
-
         t1 = time.perf_counter()
-
         total = datetime.timedelta(seconds=t1 - t0)
-
-        print("Result", res, "- elapsed time:", total)
-
-        # if str(res) != z3.sat:
-        #     core = opt.unsat_core()
-        #     print(core["foo20"])
-        #     print(core)
+        print(f"Check completed in {total}")
 
         if res == z3.unsat:
             break
-
-    while res != z3.unsat:
-        print(
-            to_json(
-                Output(problem=problem, solution=Solution([]), map_points=map_points)
-            )
-        )
 
         if debug_vars.get("min_handle", None):
             print(f"lower_bounds: {opt.upper(debug_vars['min_handle'])}")
@@ -578,15 +466,6 @@ def _run(
         print(to_json(output))
 
         yield output
-
-        # res = opt.check(total_dislikes < z3.BitVecVal(int(opt.lower(min_handle)), total_dislikes.sort()))
-        total_dislikes = debug_vars["total_dislikes"]
-        min_handle = debug_vars["min_handle"]
-        res = opt.add(
-            total_dislikes
-            < z3.Int2BV(opt.upper(min_handle), total_dislikes.sort().size())
-        )
-        res = opt.check()
 
 
 @click.command()

@@ -213,7 +213,11 @@ def orientation_z3(p: Point, q: Point, r: Point):
         handle_sign_ext(q.x - p.x) * handle_sign_ext(r.y - q.y)
     )
 
-    return z3.If(val > 0, 1, z3.If(val < 0, 2, 0))
+    return z3.If(
+        val > z3.BitVecVal(0, val.sort()),
+        z3.BitVecVal(1, val.sort()),
+        z3.If(val < 0, z3.BitVecVal(2, val.sort()), z3.BitVecVal(0, val.sort())),
+    )
 
 
 def on_segment_z3(p: Point, q: Point, r: Point):
