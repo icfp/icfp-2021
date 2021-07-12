@@ -1,12 +1,12 @@
 import datetime
 import math
+import os
+import pickle
 import time
 from collections import defaultdict
+from os.path import exists
 from pathlib import Path
 from typing import Dict, Iterable, List
-import pickle
-import os
-from os.path import exists
 
 import click
 import z3
@@ -180,11 +180,14 @@ def _generate(problem_number: int) -> Output:
     in_hole_map = make_in_hole_matrix(stats, problem)
     allowed_edges: Dict[Point, List[Point]] = edges_in_hole(in_hole_map, problem.hole)
 
-    os.mkdir("pickled", )
-    with open('pickled/allowed_edges_' + problem_number + '.pickle', 'wb') as f:
+    os.mkdir(
+        "pickled",
+    )
+    with open("pickled/allowed_edges_" + problem_number + ".pickle", "wb") as f:
         pickle.dump(allowed_edges, f)
 
     return Output(problem=problem, solution=Solution([]), map_points=[])
+
 
 def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Output:
     problem = load_problem(problem_number)
@@ -200,9 +203,9 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     allowed_edges: Dict[Point, List[Point]]
 
-    if exists('pickled/allowed_edges_' + problem_number + '.pickle'):
+    if exists("pickled/allowed_edges_" + problem_number + ".pickle"):
         print("Using picked allowed_edges")
-        with open('pickled/allowed_edges_' + problem_number + '.pickle', 'rb') as f:
+        with open("pickled/allowed_edges_" + problem_number + ".pickle", "rb") as f:
             allowed_edges = pickle.load(f)
     else:
         print("Pickled allowed_edges not found. Computing manually.")
