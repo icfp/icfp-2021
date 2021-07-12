@@ -241,3 +241,49 @@ def do_intersect_z3(p1: Point, p2: Point, e1: Point, e2: Point):
         z3.And(o3 == 0, on_segment_z3(p2, p1, e2)),
         z3.And(o4 == 0, on_segment_z3(p2, e1, e2)),
     )
+
+#change p3->e1 and p4->e2
+def line_intersects(p1: Point, p2: Point, p3: Point, p4: Point) -> Point:
+    #ref: https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_two_points_on_each_line_segment
+    t_numerator  = (((p1.x-p3.x)*(p3.y-p4.y))-((p1.y-p3.y)*(p3.x-p4.x)))
+    u_numerator  = (((p2.x-p1.x)*(p1.y-p3.y))-((p2.y-p1.y)*(p1.x-p3.x)))
+    divisor = (((p1.x-p2.x)*(p3.y-p4.y))-((p1.y-p2.y)*(p3.x-p4.x)))
+
+    if (divisor == 0.0):
+        #if (((p1.x == 3 and p1.y == 1) or (p2.x == 3 and p2.y == 1)) and ((p1.x == 3 and p1.y == 4) or (p2.x == 3 and p2.y == 4))):
+            #print('divisor is 0 for missing 7,1')
+        return False
+
+    t = t_numerator/divisor
+    u = u_numerator/divisor
+
+    x_intersect_t = p1.x + (t * (p2.x-p1.x))
+    y_intersect_t = p1.y + (t * (p2.y-p1.y))
+    x_intersect_u = p3.x + (u * (p4.x-p3.x))
+    y_intersect_u = p3.y + (u * (p4.y-p3.y))
+
+    if ((t < 0.0 or t > 1.0) or (u < 0.0 or u > 1.0)):
+        #if (((p1.x == 7 and p1.y == 1) or (p2.x == 7 and p2.y == 1)) and ((p1.x == 3 and p1.y == 4) or (p2.x == 3 and p2.y == 4))):
+            #print('outside 0 and 1 for missing 7,1')
+            #print(f"--missing 7,1 intersects at {[(x_intersect_t,y_intersect_t), (x_intersect_u,y_intersect_u)]}")
+            #print(f"--edge is {(p3, p4)}")
+        return False
+
+    #if the line intersection happens exactly at p1 or p2 then it's ok
+    if ((p1.x-x_intersect_t == 0.0 and p1.y-y_intersect_t == 0.0) or (p2.x-x_intersect_t == 0.0 and p2.y-y_intersect_t == 0.0)):
+        #if (((p1.x == 7 and p1.y == 1) or (p2.x == 7 and p2.y == 1)) and ((p1.x == 3 and p1.y == 4) or (p2.x == 3 and p2.y == 4))):
+            #print('intersecting p1 or p2 for missing 7,1')
+            #print(f"--edge is {(p3, p4)}")
+        return False
+
+    #if the line intersection happens exactly at e1 or e2 then it's ok
+    if ((p3.x-x_intersect_u == 0.0 and p3.y-y_intersect_u == 0.0) or (p4.x-x_intersect_u == 0.0 and p4.y-y_intersect_u == 0.0)):
+        #if (((p1.x == 7 and p1.y == 1) or (p2.x == 7 and p2.y == 1)) and ((p1.x == 3 and p1.y == 4) or (p2.x == 3 and p2.y == 4))):
+            #print('intersecting p1 or p2 for missing 7,1')
+            #print(f"--edge is {(p3, p4)}")
+        return False
+    
+    if (((p1.x == 3 and p1.y == 1) or (p2.x == 3 and p2.y == 1)) and ((p1.x == 3 and p1.y == 4) or (p2.x == 3 and p2.y == 4))):
+        print(f"wrong edge intersect: {(p3, p4)} at {[(x_intersect_t,y_intersect_t), (x_intersect_u,y_intersect_u)]}")
+        print(f"--{(p1, p2)}")
+    return True
