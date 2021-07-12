@@ -418,8 +418,8 @@
          onclick="render(solution_state)" checked/>
   Solution Figure
 </label>
-<input type="checkbox" id="solveIt" onclick=" />
-  <label id=" solveItLabel" for="solveIt">Solve It</label>
+  <input type="checkbox" id="solveIt" />
+  <label id="solveItLabel" for="solveIt">Solve It</label>
 
 <div class=" row align-items-center">
   <div class="col-sm-2"><p id="value-step"></p></div>
@@ -460,8 +460,7 @@
   }
 
   function solve(number) {
-    fetch(`/api/solve/${number}`).then(r => r.text().then(r => {
-      document.getElementById('json').value = r;
+    fetch(`/api/solve/${number}`).then(r => r.json().then(r => {
       console.log('Render', r);
       render(r);
     }))

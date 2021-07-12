@@ -243,14 +243,14 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
     t0 = time.perf_counter()
     disallowed_edges: Dict[Point, set[Point]]
 
-    if exists("pickled/disallowed_edges_" + problem_number + ".pickle"):
+    if exists(f"pickled/disallowed_edges_{problem_number}.pickle"):
         print("Using picked disallowed_edges")
-        with open("pickled/disallowed_edges_" + problem_number + ".pickle", "rb") as f:
+        with open(f"pickled/disallowed_edges_{problem_number}.pickle", "rb") as f:
             disallowed_edges = pickle.load(f)
     else:
         print("Pickled allowed_edges not found. Computing manually.")
-        disallowed_edges = invalid_intersecting_edges(in_hole_map, problem.hole)
-        # disallowed_edges = {}
+        # disallowed_edges = invalid_intersecting_edges(in_hole_map, problem.hole)
+        disallowed_edges = {}
 
     total_disallowed_number_of_edges = sum(
         len(values) for key, values in disallowed_edges.items()
@@ -340,7 +340,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
             # https://stackoverflow.com/a/68007038
             opt.add(
-                z3.PbGe(
+                z3.PbLe(
                     [
                         (
                             polygon.do_intersect_z3(
@@ -353,7 +353,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
                         )
                         for hole_edge in hole_edges(problem.hole)
                     ],
-                    2,
+                    0,
                 )
             )
 
@@ -487,9 +487,9 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
         constrain_to_edges_in_hole,
         constrain_to_edges_in_hole_as_z3_func.disable,
         constrain_unique_positions.disable,
-        minimize_dislikes,
+        minimize_dislikes.disable,
         virtual_points.disable,
-        constrain_distances.disable,
+        constrain_distances,
     ]
 
     debug_vars = {}
