@@ -18,8 +18,8 @@ def get_api_token() -> str:
     return str(token)
 
 
-def submit(problem_id: int) -> Iterator[Identifier]:
-    for output in _run(problem_id, minimize=True):
+def submit(problem_id: int, timeout: int) -> Iterator[Identifier]:
+    for output in _run(problem_id, minimize=True, timeout=timeout):
         solution = output.solution
 
         print(f"Submitting solution {solution.vertices} for problem {problem_id}")
@@ -41,7 +41,8 @@ def submit(problem_id: int) -> Iterator[Identifier]:
 
 
 @click.command()
-@click.argument("problem_id")
-def submit_problem(problem_id: int) -> Identifier:
-    for pose in submit(problem_id):
+@click.argument("problem_id", type=click.INT)
+@click.option("--timeout", default=5 * 60, type=click.INT)
+def submit_problem(problem_id: int, timeout: int) -> Identifier:
+    for pose in submit(problem_id, timeout=timeout * 1000):
         print(pose)

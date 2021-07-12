@@ -525,11 +525,11 @@ def _run(
 
 
 @click.command()
-@click.argument("problem_number")
-@click.option("--minimize/--no-minimize", default=False)
-@click.option("--debug/--no-debug", default=False)
-@click.option("--generate/--no-generate", default=False)
-@click.option("--timeout", default=5 * 60)
+@click.argument("problem_number", type=click.INT)
+@click.option("--minimize/--no-minimize", default=False, type=click.BOOL)
+@click.option("--debug/--no-debug", default=False, type=click.BOOL)
+@click.option("--generate/--no-generate", default=False, type=click.BOOL)
+@click.option("--timeout", default=5 * 60, type=click.INT)
 def run(
     problem_number: int, minimize: bool, debug: bool, generate: bool, timeout: int
 ) -> Output:
