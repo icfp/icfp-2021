@@ -495,13 +495,21 @@ def _run(
 @click.option("--minimize/--no-minimize", default=False)
 @click.option("--debug/--no-debug", default=False)
 @click.option("--generate/--no-generate", default=False)
-def run(problem_number: int, minimize: bool, debug: bool, generate: bool) -> Output:
+@click.option("--timeout", default=5 * 60)
+def run(
+    problem_number: int, minimize: bool, debug: bool, generate: bool, timeout: int
+) -> Output:
     from z3 import set_option
 
     set_option("parallel.enable", True)
     set_option("parallel.threads.max", 32)
 
-    *_, last = _run(problem_number, minimize, debug)
+    *_, last = _run(
+        problem_number=problem_number,
+        minimize=minimize,
+        debug=debug,
+        timeout=timeout * 1000,
+    )
     return last
 
 
