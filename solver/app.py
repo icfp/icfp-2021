@@ -340,13 +340,20 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
             # https://stackoverflow.com/a/68007038
             opt.add(
                 z3.PbGe(
-                    [(polygon.do_intersect_z3(
-                        source_point,
-                        target_point,
-                        hole_edge.source,
-                        hole_edge.target,
-                    ), 1) for hole_edge in hole_edges(problem.hole)],
-                    2)
+                    [
+                        (
+                            polygon.do_intersect_z3(
+                                source_point,
+                                target_point,
+                                hole_edge.source,
+                                hole_edge.target,
+                            ),
+                            1,
+                        )
+                        for hole_edge in hole_edges(problem.hole)
+                    ],
+                    2,
+                )
             )
 
         return {}
