@@ -162,7 +162,7 @@ def hole_edges(hole: Hole) -> list[EdgeSegment]:
 
 def search(pair):
     p1, p2, hole_edges = pair
-    if any(polygon.do_intersect(p1, p2, e1, e2) for e1, e2 in hole_edges):
+    if sum(1 for e1, e2 in hole_edges if polygon.do_intersect(p1, p2, e1, e2)) > 1:
         # we are excluding valid edges where the line terminates on an edge vertex
         # but not fixing yet because there are also invalid edges that terminate
         # on an edge vertex
@@ -334,17 +334,24 @@ def _run(
             source_point = Point(source_x, source_y)
             target_point = Point(target_x, target_y)
 
-            for hole_edge in hole_edges(problem.hole):
-                opt.add(
-                    z3.Not(
-                        polygon.do_intersect_z3(
-                            source_point,
-                            target_point,
-                            hole_edge.source,
-                            hole_edge.target,
+            # https://stackoverflow.com/a/68007038
+            opt.add(
+                z3.PbGe(
+                    [
+                        (
+                            polygon.do_intersect_z3(
+                                source_point,
+                                target_point,
+                                hole_edge.source,
+                                hole_edge.target,
+                            ),
+                            1,
                         )
-                    )
+                        for hole_edge in hole_edges(problem.hole)
+                    ],
+                    2,
                 )
+            )
 
         return {}
 
