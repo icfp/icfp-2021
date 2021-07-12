@@ -8,6 +8,7 @@ from solver.app import (
     Problem,
     compute_statistics,
     distance,
+    invalid_intersecting_edges,
     load_problem,
     make_in_hole_matrix,
     make_ranges,
@@ -103,3 +104,20 @@ class TestApp(TestCase):
         self.assertEqual(x_lookup[10], [(9, 9), (62, 86)])
         self.assertEqual(x_lookup[6], [(82, 86)])
         self.assertEqual(x_lookup[5], [(86, 86)])
+
+    def test_invalid_intersecting_edges(self):
+        problem = Problem(
+            epsilon=0,
+            hole=[Point(1, 1), Point(7, 1), Point(3, 3), Point(7, 5), Point(1, 5)],
+            figure=Figure(edges=[(0, 1)], vertices=[(2, 2), (2, 4)]),
+        )
+
+        stats = compute_statistics(problem)
+        lookup = make_in_hole_matrix(stats, problem)
+        invalid_edges = invalid_intersecting_edges(lookup, problem.hole)
+
+        print(invalid_edges[Point(3, 4)])
+
+        self.assertTrue(Point(4, 2) in invalid_edges)
+        self.assertTrue(Point(4, 4) in invalid_edges[Point(4, 2)])
+        self.assertFalse(Point(2, 2) in invalid_edges[Point(3, 4)])
