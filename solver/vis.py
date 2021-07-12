@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from .app import ROOT_DIR, _run, load_problem, compute_statistics, make_in_hole_matrix
+from .app import ROOT_DIR, _run, compute_statistics, load_problem, make_in_hole_matrix
 from .types import Output, Solution
 
 app = FastAPI()
@@ -29,8 +29,11 @@ async def get_map_points(number: int):
 
     map_points = [[point.x, point.y] for point, inside in in_hole_map.items() if inside]
     return Output(
-        problem=load_problem(number), solution=Solution(vertices=[]), map_points=map_points
+        problem=load_problem(number),
+        solution=Solution(vertices=[]),
+        map_points=map_points,
     )
+
 
 app.mount(
     "/", StaticFiles(directory=f"{ROOT_DIR}/visualizer/", html=True), name="static"

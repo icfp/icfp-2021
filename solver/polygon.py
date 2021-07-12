@@ -242,33 +242,38 @@ def do_intersect_z3(p1: Point, p2: Point, e1: Point, e2: Point):
         z3.And(o4 == 0, on_segment_z3(p2, e1, e2)),
     )
 
-#change p3->e1 and p4->e2
+
+# change p3->e1 and p4->e2
 def line_intersects(p1: Point, p2: Point, e1: Point, e2: Point) -> Point:
-    #ref: https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_two_points_on_each_line_segment
-    t_numerator  = (((p1.x-e1.x)*(e1.y-e2.y))-((p1.y-e1.y)*(e1.x-e2.x)))
-    u_numerator  = (((p2.x-p1.x)*(p1.y-e1.y))-((p2.y-p1.y)*(p1.x-e1.x)))
-    divisor = (((p1.x-p2.x)*(e1.y-e2.y))-((p1.y-p2.y)*(e1.x-e2.x)))
+    # ref: https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_two_points_on_each_line_segment
+    t_numerator = ((p1.x - e1.x) * (e1.y - e2.y)) - ((p1.y - e1.y) * (e1.x - e2.x))
+    u_numerator = ((p2.x - p1.x) * (p1.y - e1.y)) - ((p2.y - p1.y) * (p1.x - e1.x))
+    divisor = ((p1.x - p2.x) * (e1.y - e2.y)) - ((p1.y - p2.y) * (e1.x - e2.x))
 
-    if (divisor == 0.0):
+    if divisor == 0.0:
         return False
 
-    t = t_numerator/divisor
-    u = u_numerator/divisor
+    t = t_numerator / divisor
+    u = u_numerator / divisor
 
-    x_intersect_t = p1.x + (t * (p2.x-p1.x))
-    y_intersect_t = p1.y + (t * (p2.y-p1.y))
-    x_intersect_u = e1.x + (u * (e2.x-e1.x))
-    y_intersect_u = e1.y + (u * (e2.y-e1.y))
+    x_intersect_t = p1.x + (t * (p2.x - p1.x))
+    y_intersect_t = p1.y + (t * (p2.y - p1.y))
+    x_intersect_u = e1.x + (u * (e2.x - e1.x))
+    y_intersect_u = e1.y + (u * (e2.y - e1.y))
 
-    if ((t < 0.0 or t > 1.0) or (u < 0.0 or u > 1.0)):
+    if (t < 0.0 or t > 1.0) or (u < 0.0 or u > 1.0):
         return False
 
-    #if the line intersection happens exactly at p1 or p2 then it's ok
-    if ((p1.x-x_intersect_t == 0.0 and p1.y-y_intersect_t == 0.0) or (p2.x-x_intersect_t == 0.0 and p2.y-y_intersect_t == 0.0)):
+    # if the line intersection happens exactly at p1 or p2 then it's ok
+    if (p1.x - x_intersect_t == 0.0 and p1.y - y_intersect_t == 0.0) or (
+        p2.x - x_intersect_t == 0.0 and p2.y - y_intersect_t == 0.0
+    ):
         return False
 
-    #if the line intersection happens exactly at e1 or e2 then it's ok
-    if ((e1.x-x_intersect_u == 0.0 and e1.y-y_intersect_u == 0.0) or (e2.x-x_intersect_u == 0.0 and e2.y-y_intersect_u == 0.0)):
+    # if the line intersection happens exactly at e1 or e2 then it's ok
+    if (e1.x - x_intersect_u == 0.0 and e1.y - y_intersect_u == 0.0) or (
+        e2.x - x_intersect_u == 0.0 and e2.y - y_intersect_u == 0.0
+    ):
         return False
-    
+
     return True
