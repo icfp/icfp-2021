@@ -44,10 +44,9 @@ def distance(p1: Point, p2: Point):
     delta_x = p1.x - p2.x
     delta_y = p1.y - p2.y
     if isinstance(delta_x, z3.BitVecRef) and isinstance(delta_y, z3.BitVecRef):
-        foo = delta_x.size() + delta_y.size()
-        d_x = z3.SignExt(max(0, delta_y.size() - delta_x.size()) + foo, delta_x)
-        d_y = z3.SignExt(max(0, delta_x.size() - delta_y.size()) + foo, delta_y)
-        delta_x, delta_y = d_x, d_y
+        desired_size = 1 + (2 * (delta_x.size() + delta_y.size()))
+        delta_x = z3.SignExt(desired_size - delta_x.size(), delta_x)
+        delta_y = z3.SignExt(desired_size - delta_y.size(), delta_y)
     pow_x = delta_x * delta_x
     pow_y = delta_y * delta_y
     return pow_x + pow_y
