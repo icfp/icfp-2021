@@ -23,6 +23,11 @@ class Edge(NamedTuple):
     target: VertexIndex
 
 
+class EdgeSegment(NamedTuple):
+    source: Point
+    target: Point
+
+
 class InclusiveRange(NamedTuple):
     start: int
     end: int

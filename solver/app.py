@@ -19,6 +19,7 @@ from .types import (
     DebugVars,
     DistanceFunc,
     EdgeLengthRange,
+    EdgeSegment,
     Figure,
     Hole,
     InclusiveRange,
@@ -157,6 +158,10 @@ def make_ranges(
             yield YPointRange(x=x, y_inclusive_ranges=y_ranges)
 
 
+def hole_edges(hole: Hole) -> list[EdgeSegment]:
+    return list(map(lambda t: EdgeSegment(t[0], t[1]), zip(hole, hole[1:] + [hole[0]])))
+
+
 def invalid_intersecting_edges(
     lookup: InHoleLookup, hole: Hole
 ) -> Dict[Point, set[Point]]:
@@ -220,14 +225,14 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
     else:
         print("Pickled allowed_edges not found. Computing manually.")
         disallowed_edges = invalid_intersecting_edges(in_hole_map, problem.hole)
+        # allowed_edges = edges_in_hole(in_hole_map, problem.hole)
+        disallowed_edges = {}
 
     t1 = time.perf_counter()
 
     total = datetime.timedelta(seconds=t1 - t0)
 
     print("Done!.. elapsed time:", total)
-
-    # print(disallowed_edges)
 
     print(f"Map Matrix Size {len(in_hole_map)}")
 
@@ -288,6 +293,32 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
                 )
 
             opt.add(z3.Or(*x_constraints))
+
+        return {}
+
+    @constraint
+    def constrain_to_edges_in_hole_as_z3_func() -> DebugVars:
+        for source, target in problem.figure.edges:
+            source_x = xs[source]
+            source_y = ys[source]
+
+            target_x = xs[target]
+            target_y = ys[target]
+
+            source_point = Point(source_x, source_y)
+            target_point = Point(target_x, target_y)
+
+            for hole_edge in hole_edges(problem.hole):
+                opt.add(
+                    z3.Not(
+                        polygon.do_intersect_z3(
+                            source_point,
+                            target_point,
+                            hole_edge.source,
+                            hole_edge.target,
+                        )
+                    )
+                )
 
         return {}
 
@@ -416,7 +447,8 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     constraints: List[Constraint] = [
         constrain_to_xy_in_hole,
-        constrain_to_edges_in_hole,
+        constrain_to_edges_in_hole.disable,
+        constrain_to_edges_in_hole_as_z3_func.disable,
         constrain_unique_positions.disable,
         minimize_dislikes,
         virtual_points.disable,

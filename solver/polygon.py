@@ -1,3 +1,5 @@
+import z3
+
 from .types import Hole, Point
 
 
@@ -188,3 +190,54 @@ def do_intersect(p1: Point, q1: Point, p2: Point, q2: Point):
 
     # If none of the cases
     return False
+
+
+def orientation_z3(p: Point, q: Point, r: Point):
+    # to find the orientation of an ordered triplet (p,q,r)
+    # function returns the following values:
+    # 0 : Colinear points
+    # 1 : Clockwise points
+    # 2 : Counterclockwise
+
+    # See https://www.geeksforgeeks.org/orientation-3-ordered-points/amp/
+    # for details of below formula.
+
+    desired_size = 2 * (p.x.size() + p.y.size())
+
+    def handle_sign_ext(v):
+        if isinstance(v, z3.BitVecRef):
+            return z3.SignExt(desired_size - v.size(), v)
+        return v
+
+    val = (handle_sign_ext(q.y - p.y) * handle_sign_ext(r.x - q.x)) - (
+        handle_sign_ext(q.x - p.x) * handle_sign_ext(r.y - q.y)
+    )
+
+    return z3.If(val > 0, 1, z3.If(val < 0, 2, 0))
+
+
+def on_segment_z3(p: Point, q: Point, r: Point):
+    def z3_max(x, y) -> z3.If:
+        return z3.If(x > y, x, y)
+
+    return z3.And(
+        q.x <= z3_max(p.x, r.x),
+        q.x >= z3_max(p.x, r.x),
+        q.y <= z3_max(p.y, r.y),
+        q.y >= z3_max(p.y, r.y),
+    )
+
+
+def do_intersect_z3(p1: Point, p2: Point, e1: Point, e2: Point):
+    o1 = orientation_z3(p1, e1, p2)
+    o2 = orientation_z3(p1, e1, e2)
+    o3 = orientation_z3(p2, e2, p1)
+    o4 = orientation_z3(p2, e2, e1)
+
+    return z3.Or(
+        z3.And(o1 != o2, o3 != o4),
+        z3.And(o1 == 0, on_segment_z3(p1, p2, e1)),
+        z3.And(o2 == 0, on_segment_z3(p1, e2, e1)),
+        z3.And(o3 == 0, on_segment_z3(p2, p1, e2)),
+        z3.And(o4 == 0, on_segment_z3(p2, e1, e2)),
+    )
