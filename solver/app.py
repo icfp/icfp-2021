@@ -1,7 +1,10 @@
 import datetime
 import math
+import os
+import pickle
 import time
 from collections import defaultdict
+from os.path import exists
 from pathlib import Path
 from typing import Dict, Iterable, List
 
@@ -177,6 +180,21 @@ def invalid_intersecting_edges(
     return intersecting_edges
 
 
+def _generate(problem_number: int) -> Output:
+    problem = load_problem(problem_number)
+    stats = compute_statistics(problem)
+    in_hole_map = make_in_hole_matrix(stats, problem)
+    allowed_edges: Dict[Point, List[Point]] = edges_in_hole(in_hole_map, problem.hole)
+
+    os.mkdir(
+        "pickled",
+    )
+    with open("pickled/allowed_edges_" + problem_number + ".pickle", "wb") as f:
+        pickle.dump(allowed_edges, f)
+
+    return Output(problem=problem, solution=Solution([]), map_points=[])
+
+
 def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Output:
     problem = load_problem(problem_number)
 
@@ -188,7 +206,15 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     print(f"Building allowed edges for {problem_number}")
     t0 = time.perf_counter()
-    disallowed_edges: Dict[Point, List[Point]] = invalid_intersecting_edges(in_hole_map, problem.hole)
+    disallowed_edges: Dict[Point, List[Point]]
+
+    if exists("pickled/disallowed_edges_" + problem_number + ".pickle"):
+        print("Using picked disallowed_edges")
+        with open("pickled/disallowed_edges_" + problem_number + ".pickle", "rb") as f:
+            allowed_edges = pickle.load(f)
+    else:
+        print("Pickled allowed_edges not found. Computing manually.")
+        disallowed_edges = invalid_intersecting_edges(in_hole_map, problem.hole)
 
     t1 = time.perf_counter()
 
@@ -449,13 +475,17 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 @click.argument("problem_number")
 @click.option("--minimize/--no-minimize", default=False)
 @click.option("--debug/--no-debug", default=False)
-def run(problem_number: int, minimize: bool, debug: bool) -> Output:
+@click.option("--generate/--no-generate", default=False)
+def run(problem_number: int, minimize: bool, debug: bool, generate: bool) -> Output:
     from z3 import set_option
 
     set_option("parallel.enable", True)
     set_option("parallel.threads.max", 32)
 
-    return _run(problem_number, minimize, debug)
+    if generate:
+        return _generate(problem_number)
+    else:
+        return _run(problem_number, minimize, debug)
 
 
 if __name__ == "__main__":
