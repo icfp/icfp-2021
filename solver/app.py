@@ -162,25 +162,46 @@ def hole_edges(hole: Hole) -> list[EdgeSegment]:
     return list(map(lambda t: EdgeSegment(t[0], t[1]), zip(hole, hole[1:] + [hole[0]])))
 
 
+def search(pair):
+    p1, p2, hole_edges = pair
+    if any(polygon.do_intersect(p1, p2, e1, e2) for e1, e2 in hole_edges):
+        # we are excluding valid edges where the line terminates on an edge vertex
+        # but not fixing yet because there are also invalid edges that terminate
+        # on an edge vertex
+        return [p1, p2]
+    return None
+
+
 def invalid_intersecting_edges(
     lookup: InHoleLookup, hole: Hole
 ) -> Dict[Point, set[Point]]:
+    import multiprocessing as mp
     inside_points = [point for point, inside in lookup.items() if inside]
     hole_edges = list(zip(hole, hole[1:] + [hole[0]]))
+
+    print('Building search space')
+
+    search_points = [(p1, p2, hole_edges)
+                     for p1 in inside_points
+                     for p2 in inside_points
+                     if not (p1.x == p2.x and p1.y == p2.y)]
+
+    print('Built search space')
+
     intersecting_edges = defaultdict(set)
-    for p1 in inside_points:
 
-        for p2 in inside_points:
-            if p1.x == p2.x and p1.y == p2.y:
-                continue
+    with mp.Pool(8) as p:
+        results = p.map(search, search_points)
 
-            for e1, e2 in hole_edges:
-                if polygon.do_intersect(p1, p2, e1, e2):
-                    # we are excluding valid edges where the line terminates on an edge vertex
-                    # but not fixing yet because there are also invalid edges that terminate
-                    # on an edge vertex
-                    intersecting_edges[p1].add(p2)
-                    intersecting_edges[p2].add(p1)
+    print('Done')
+
+    for result in results:
+        if result:
+            p1, p2 = result[0], result[1]
+            intersecting_edges[p1].add(p2)
+            intersecting_edges[p2].add(p1)
+
+    print('Built results map')
 
     return intersecting_edges
 
