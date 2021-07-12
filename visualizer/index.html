@@ -6,80 +6,84 @@
   <script type="application/javascript">
     const sample = {
       problem: {
-      hole: [
-        [55, 80],
-        [65, 95],
-        [95, 95],
-        [35, 5],
-        [5, 5],
-        [35, 50],
-        [5, 95],
-        [35, 95],
-        [45, 80]
-      ],
-      figure: {
-        edges: [
-          [2, 5],
-          [5, 4],
-          [4, 1],
-          [1, 0],
-          [0, 8],
-          [8, 3],
-          [3, 7],
-          [7, 11],
-          [11, 13],
-          [13, 12],
-          [12, 18],
-          [18, 19],
-          [19, 14],
-          [14, 15],
-          [15, 17],
-          [17, 16],
-          [16, 10],
-          [10, 6],
-          [6, 2],
-          [8, 12],
-          [7, 9],
-          [9, 3],
-          [8, 9],
-          [9, 12],
-          [13, 9],
-          [9, 11],
-          [4, 8],
-          [12, 14],
-          [5, 10],
-          [10, 15]
+        hole: [
+          [55, 80],
+          [65, 95],
+          [95, 95],
+          [35, 5],
+          [5, 5],
+          [35, 50],
+          [5, 95],
+          [35, 95],
+          [45, 80]
         ],
-        vertices: [
-          [20, 30],
-          [20, 40],
-          [30, 95],
-          [40, 15],
-          [40, 35],
-          [40, 65],
-          [40, 95],
-          [45, 5],
-          [45, 25],
-          [50, 15],
-          [50, 70],
-          [55, 5],
-          [55, 25],
-          [60, 15],
-          [60, 35],
-          [60, 65],
-          [60, 95],
-          [70, 95],
-          [80, 30],
-          [80, 40]
-        ]
-      },
-      epsilon: 150000
-    }};
+        figure: {
+          edges: [
+            [2, 5],
+            [5, 4],
+            [4, 1],
+            [1, 0],
+            [0, 8],
+            [8, 3],
+            [3, 7],
+            [7, 11],
+            [11, 13],
+            [13, 12],
+            [12, 18],
+            [18, 19],
+            [19, 14],
+            [14, 15],
+            [15, 17],
+            [17, 16],
+            [16, 10],
+            [10, 6],
+            [6, 2],
+            [8, 12],
+            [7, 9],
+            [9, 3],
+            [8, 9],
+            [9, 12],
+            [13, 9],
+            [9, 11],
+            [4, 8],
+            [12, 14],
+            [5, 10],
+            [10, 15]
+          ],
+          vertices: [
+            [20, 30],
+            [20, 40],
+            [30, 95],
+            [40, 15],
+            [40, 35],
+            [40, 65],
+            [40, 95],
+            [45, 5],
+            [45, 25],
+            [50, 15],
+            [50, 70],
+            [55, 5],
+            [55, 25],
+            [60, 15],
+            [60, 35],
+            [60, 65],
+            [60, 95],
+            [70, 95],
+            [80, 30],
+            [80, 40]
+          ]
+        },
+        epsilon: 150000
+      }
+    };
     let slider_value = 0;
+
+    let solution_state;
 
     function render(input) {
       console.log("Rendering");
       let json = typeof input == "string" ? JSON.parse(input) : (input || sample);
+      solution_state = json;
 
       console.log('problem', json)
 
@@ -88,7 +92,7 @@
       let figure = problem.figure || {}
 
       let solution = Object.create(figure)
-      solution.vertices = (json.solution || { "vertices": []}).vertices || []
+      solution.vertices = (json.solution || {"vertices": []}).vertices || []
 
 
       // reset and scale canvas
@@ -179,7 +183,7 @@
 
 
       function makeD3FigurePath(figure) {
-        if(!figure || !figure.vertices || figure.vertices.length === 0) {
+        if (!figure || !figure.vertices || figure.vertices.length === 0) {
           return '';
         }
 
@@ -392,30 +396,36 @@
 </head>
 <body>
 <div style="width: 100%; height: 600px">
-<svg id="svgContainer" width="1000" height="600" style="background: grey">
-  <g id="v2"></g>
-</svg>
-<input placeholder="problem number" onchange="load_problem(this.value)" />
-<textarea id="json" onchange="render(this.value)" placeholder="problem json (leave empty for sample)" style="display:none; height: 600px; width: 500px;">
-</textarea>
+  <svg id="svgContainer" width="1000" height="600" style="background: grey">
+    <g id="v2"></g>
+  </svg>
+  <input placeholder="problem number" onchange="load_problem(this.value)"/>
 </div>
-<div/>
 <label id="figureLabel">
-  <input type="checkbox" id="figureCheckbox" name="figureCheckbox" onclick="render(document.getElementById('json').value)" checked/>
+  <input type="checkbox" id="figureCheckbox" name="figureCheckbox"
+         onclick="render(solution_state)" checked/>
   Original Figure
 </label>
-<input type="checkbox" id="voronoiCheckbox" name="voronoiCheckbox" onclick="render(document.getElementById('json').value)" checked> Voronois </input>
+<input type="checkbox" id="voronoiCheckbox" name="voronoiCheckbox"
+       onclick="render(solution_state)"> Voronois </input>
 <label id="pointsLabel" hidden>
-  <input type="checkbox" id="pointsCheckbox" name="pointsCheckbox" onclick="render(document.getElementById('json').value)"/>
+  <input type="checkbox" id="pointsCheckbox" name="pointsCheckbox"
+         onclick="render(solution_state)"/>
   Map Points
 </label>
 <label id="solutionLabel" hidden>
-  <input type="checkbox" id="solutionCheckbox" name="solutionCheckbox" onclick="render(document.getElementById('json').value)" checked/>
+  <input type="checkbox" id="solutionCheckbox" name="solutionCheckbox"
+         onclick="render(solution_state)" checked/>
   Solution Figure
 </label>
-<div class="row align-items-center">
+  <input type="checkbox" id="solveIt" />
+  <label id="solveItLabel" for="solveIt">Solve It</label>
+
+<div class=" row align-items-center">
   <div class="col-sm-2"><p id="value-step"></p></div>
-  <div class="col-sm"><div id="slider-step"></div></div>
+  <div class="col-sm">
+    <div id="slider-step"></div>
+  </div>
 </div>
 
 <script>
@@ -432,22 +442,31 @@
   }
 
   initZoom();
-  render();
+
   function load_problem(number) {
-    fetch(`/api/problems/${number}`).then(r => r.text().then(r => {
+    fetch(`/api/problems/${number}`).then(r => r.json().then(r => {
       render(r);
-      solve(number);
+      load_map_points(number, r)
     }))
   }
 
+  function load_map_points(number, problem) {
+    fetch(`/api/points/${number}`).then(r => r.json().then(r => {
+      render(r);
+      if (document.getElementById('solveIt').checked) {
+        solve(number);
+      }
+    }))
+  }
 
   function solve(number) {
-    fetch(`/api/solve/${number}`).then(r => r.text().then(r => {
-      document.getElementById('json').value = r;
+    fetch(`/api/solve/${number}`).then(r => r.json().then(r => {
       console.log('Render', r);
       render(r);
     }))
   }
+
+  load_problem(1)
 </script>
 </body>
 </html>

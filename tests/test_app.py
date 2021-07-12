@@ -116,8 +116,6 @@ class TestApp(TestCase):
         lookup = make_in_hole_matrix(stats, problem)
         invalid_edges = invalid_intersecting_edges(lookup, problem.hole)
 
-        print(invalid_edges[Point(3, 4)])
-
         self.assertTrue(Point(4, 2) in invalid_edges)
         self.assertTrue(Point(4, 4) in invalid_edges[Point(4, 2)])
         self.assertFalse(Point(2, 2) in invalid_edges[Point(3, 4)])

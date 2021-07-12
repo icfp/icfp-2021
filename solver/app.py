@@ -1,8 +1,10 @@
 import datetime
 import json
 import math
+import pickle
 import time
 from collections import defaultdict
+from os.path import exists
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Optional
 
@@ -161,7 +163,8 @@ def hole_edges(hole: Hole) -> list[EdgeSegment]:
 
 def search(pair):
     p1, p2, hole_edges = pair
-    if sum(1 for e1, e2 in hole_edges if polygon.do_intersect(p1, p2, e1, e2)) > 1:
+    # if sum(1 for e1, e2 in hole_edges if polygon.do_intersect(p1, p2, e1, e2)) > 1:
+    if sum(1 for e1, e2 in hole_edges if polygon.line_intersects(p1, p2, e1, e2)) > 0:
         # we are excluding valid edges where the line terminates on an edge vertex
         # but not fixing yet because there are also invalid edges that terminate
         # on an edge vertex
@@ -234,6 +237,31 @@ def _run(
     in_hole_map = make_in_hole_matrix(stats, problem)
 
     map_points = [[point.x, point.y] for point, inside in in_hole_map.items() if inside]
+
+    print(f"Building allowed edges for {problem_number}")
+    t0 = time.perf_counter()
+    disallowed_edges: Dict[Point, set[Point]]
+
+    if exists(f"pickled/disallowed_edges_{problem_number}.pickle"):
+        print("Using picked disallowed_edges")
+        with open(f"pickled/disallowed_edges_{problem_number}.pickle", "rb") as f:
+            disallowed_edges = pickle.load(f)
+    else:
+        print("Pickled allowed_edges not found. Computing manually.")
+        # disallowed_edges = invalid_intersecting_edges(in_hole_map, problem.hole)
+        disallowed_edges = {}
+
+    total_disallowed_number_of_edges = sum(
+        len(values) for key, values in disallowed_edges.items()
+    )
+
+    print("Num disallowed Edges", total_disallowed_number_of_edges)
+
+    t1 = time.perf_counter()
+
+    total = datetime.timedelta(seconds=t1 - t0)
+
+    print("Done!.. elapsed time:", total)
 
     print(f"Map Matrix Size {len(in_hole_map)}")
 
@@ -336,7 +364,7 @@ def _run(
 
             # https://stackoverflow.com/a/68007038
             opt.add(
-                z3.PbGe(
+                z3.PbLe(
                     [
                         (
                             polygon.do_intersect_z3(
@@ -349,7 +377,7 @@ def _run(
                         )
                         for hole_edge in hole_edges(problem.hole)
                     ],
-                    2,
+                    0,
                 )
             )
 
@@ -442,6 +470,13 @@ def _run(
         constrain_to_xy_in_hole,
         constrain_distances,
         figure_is_hole,
+        # constrain_to_xy_in_hole,
+        # constrain_to_edges_in_hole,
+        # constrain_to_edges_in_hole_as_z3_func.disable,
+        # constrain_unique_positions.disable,
+        # minimize_dislikes.disable,
+        # virtual_points.disable,
+        # constrain_distances,
     ]
 
     CONVEX_PROBLEMS = {
