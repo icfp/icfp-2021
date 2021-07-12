@@ -484,8 +484,8 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     constraints: List[Constraint] = [
         constrain_to_xy_in_hole,
-        constrain_to_edges_in_hole.disable,
-        constrain_to_edges_in_hole_as_z3_func,
+        constrain_to_edges_in_hole,
+        constrain_to_edges_in_hole_as_z3_func.disable,
         constrain_unique_positions.disable,
         minimize_dislikes,
         virtual_points.disable,
