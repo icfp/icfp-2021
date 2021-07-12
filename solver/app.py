@@ -164,7 +164,7 @@ def hole_edges(hole: Hole) -> list[EdgeSegment]:
 
 def search(pair):
     p1, p2, hole_edges = pair
-    if any(polygon.do_intersect(p1, p2, e1, e2) for e1, e2 in hole_edges):
+    if sum(1 for e1, e2 in hole_edges if polygon.do_intersect(p1, p2, e1, e2)) > 1:
         # we are excluding valid edges where the line terminates on an edge vertex
         # but not fixing yet because there are also invalid edges that terminate
         # on an edge vertex
@@ -176,24 +176,27 @@ def invalid_intersecting_edges(
     lookup: InHoleLookup, hole: Hole
 ) -> Dict[Point, set[Point]]:
     import multiprocessing as mp
+
     inside_points = [point for point, inside in lookup.items() if inside]
     hole_edges = list(zip(hole, hole[1:] + [hole[0]]))
 
-    print('Building search space')
+    print("Building search space")
 
-    search_points = [(p1, p2, hole_edges)
-                     for p1 in inside_points
-                     for p2 in inside_points
-                     if not (p1.x == p2.x and p1.y == p2.y)]
+    search_points = [
+        (p1, p2, hole_edges)
+        for p1 in inside_points
+        for p2 in inside_points
+        if not (p1.x == p2.x and p1.y == p2.y)
+    ]
 
-    print('Built search space')
+    print("Built search space")
 
     intersecting_edges = defaultdict(set)
 
     with mp.Pool(8) as p:
         results = p.map(search, search_points)
 
-    print('Done')
+    print("Done")
 
     for result in results:
         if result:
@@ -201,7 +204,7 @@ def invalid_intersecting_edges(
             intersecting_edges[p1].add(p2)
             intersecting_edges[p2].add(p1)
 
-    print('Built results map')
+    print("Built results map")
 
     return intersecting_edges
 
@@ -237,7 +240,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     print(f"Building allowed edges for {problem_number}")
     t0 = time.perf_counter()
-    disallowed_edges: Dict[Point, List[Point]]
+    disallowed_edges: Dict[Point, set[Point]]
 
     if exists("pickled/disallowed_edges_" + problem_number + ".pickle"):
         print("Using picked disallowed_edges")
@@ -246,8 +249,13 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
     else:
         print("Pickled allowed_edges not found. Computing manually.")
         disallowed_edges = invalid_intersecting_edges(in_hole_map, problem.hole)
-        # allowed_edges = edges_in_hole(in_hole_map, problem.hole)
-        disallowed_edges = {}
+        # disallowed_edges = {}
+
+    total_disallowed_number_of_edges = sum(
+        len(values) for key, values in disallowed_edges.items()
+    )
+
+    print("Num disallowed Edges", total_disallowed_number_of_edges)
 
     t1 = time.perf_counter()
 
@@ -468,7 +476,7 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     constraints: List[Constraint] = [
         constrain_to_xy_in_hole,
-        constrain_to_edges_in_hole.disable,
+        constrain_to_edges_in_hole,
         constrain_to_edges_in_hole_as_z3_func.disable,
         constrain_unique_positions.disable,
         minimize_dislikes,
