@@ -427,11 +427,44 @@ def _run(
         }
 
     constraints: List[Constraint] = [
+        minimize_dislikes,
         constrain_to_xy_in_hole,
         constrain_distances,
-        constrain_to_edges_in_hole_as_z3_func,
-        minimize_dislikes,
     ]
+
+    CONVEX_PROBLEMS = {
+        12,
+        13,
+        15,
+        16,
+        17,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        34,
+        35,
+        38,
+        39,
+        41,
+        43,
+        46,
+        49,
+        52,
+        53,
+        55,
+        59,
+        73,
+        76,
+        77,
+    }
+
+    if problem_number not in CONVEX_PROBLEMS:
+        print(f"Problem number {problem_number} is not convex")
+        constraints.append(constrain_to_edges_in_hole_as_z3_func)
 
     debug_vars = {}
     for c in constraints:
@@ -442,6 +475,7 @@ def _run(
         total_dislikes = debug_vars["total_dislikes"]
         min_handle = debug_vars["min_handle"]
         try:
+            print(f"Min handle {opt.upper(min_handle)}")
             opt.add(
                 total_dislikes
                 < z3.Int2BV(opt.upper(min_handle), total_dislikes.sort().size())
