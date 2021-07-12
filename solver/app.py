@@ -337,17 +337,17 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
             source_point = Point(source_x, source_y)
             target_point = Point(target_x, target_y)
 
-            for hole_edge in hole_edges(problem.hole):
-                opt.add(
-                    z3.Not(
-                        polygon.do_intersect_z3(
-                            source_point,
-                            target_point,
-                            hole_edge.source,
-                            hole_edge.target,
-                        )
-                    )
-                )
+            # https://stackoverflow.com/a/68007038
+            opt.add(
+                z3.PbGe(
+                    [(polygon.do_intersect_z3(
+                        source_point,
+                        target_point,
+                        hole_edge.source,
+                        hole_edge.target,
+                    ), 1) for hole_edge in hole_edges(problem.hole)],
+                    2)
+            )
 
         return {}
 
@@ -476,8 +476,8 @@ def _run(problem_number: int, minimize: bool = False, debug: bool = False) -> Ou
 
     constraints: List[Constraint] = [
         constrain_to_xy_in_hole,
-        constrain_to_edges_in_hole,
-        constrain_to_edges_in_hole_as_z3_func.disable,
+        constrain_to_edges_in_hole.disable,
+        constrain_to_edges_in_hole_as_z3_func,
         constrain_unique_positions.disable,
         minimize_dislikes,
         virtual_points.disable,
