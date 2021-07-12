@@ -330,14 +330,8 @@ def _run(
     @constraint
     def constrain_to_edges_in_hole_as_z3_func() -> DebugVars:
         for source, target in problem.figure.edges:
-            source_x = xs[source]
-            source_y = ys[source]
-
-            target_x = xs[target]
-            target_y = ys[target]
-
-            source_point = Point(source_x, source_y)
-            target_point = Point(target_x, target_y)
+            source_point = figure_points[source]
+            target_point = figure_points[target]
 
             # https://stackoverflow.com/a/68007038
             opt.add(
